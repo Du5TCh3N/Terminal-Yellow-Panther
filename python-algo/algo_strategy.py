@@ -32,7 +32,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         """
         gamelib.debug_write('Configuring your custom algo strategy...')
         self.config = config
-        global WALL, SUPPORT, TURRET, SCOUT, DEMOLISHER, INTERCEPTOR, MP, SP
+        global WALL, SUPPORT, TURRET, SCOUT, DEMOLISHER, INTERCEPTOR, MP, SP, SELF, ENEMY
         WALL = config["unitInformation"][0]["shorthand"]
         SUPPORT = config["unitInformation"][1]["shorthand"]
         TURRET = config["unitInformation"][2]["shorthand"]
@@ -41,6 +41,8 @@ class AlgoStrategy(gamelib.AlgoCore):
         INTERCEPTOR = config["unitInformation"][5]["shorthand"]
         MP = 1
         SP = 0
+        ENEMY = 1
+        SELF = 0
         # This is a good place to do initial setup
         self.scored_on_locations = []
 
@@ -76,7 +78,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         # First, place basic defenses
         self.build_defences(game_state)
         # Now build reactive defenses based on where the enemy scored
-        self.build_reactive_defense(game_state)
+        # self.build_reactive_defense(game_state)
 
         # If the turn is less than 5, stall with interceptors and wait to see enemy's base
         if game_state.turn_number < 5:
@@ -84,9 +86,9 @@ class AlgoStrategy(gamelib.AlgoCore):
         else:
             # Now let's analyze the enemy base to see where their defenses are concentrated.
             # If they have many units in the front we can build a line for our demolishers to attack them at long range.
-            if self.detect_enemy_unit(game_state, unit_type=None, valid_x=None, valid_y=[14, 15]) > 10:
-                self.demolisher_line_strategy(game_state)
-            else:
+            # if self.detect_enemy_unit(game_state, unit_type=None, valid_x=None, valid_y=[14, 15]) > 10:
+            #     # self.demolisher_line_strategy(game_state)
+            # else:
                 # They don't have many units in the front so lets figure out their least defended area and send Scouts there.
 
                 # Only spawn Scouts every other turn
@@ -101,18 +103,44 @@ class AlgoStrategy(gamelib.AlgoCore):
                 support_locations = [[13, 2], [14, 2], [13, 3], [14, 3]]
                 game_state.attempt_spawn(SUPPORT, support_locations)
 
-    """
-    Rebuild key walls (walls that must exist every turn) if their health is less than 
-    `health_threshold`. 
-    Also will build walls if they don't exist there so original attempt_spawn() in build_defences() function
-    is removed.
-    ----------
-    Parameters
-    ----------
-    `exceptions`: a list of lists containing coordinates of key walls that should not be rebuilt this round, default is []
-    `health_threshold`: Value is from 0-100
-    """
-    def rebuild_key_walls(self, game_state, wall_locations, exceptions=[], health_threshold=65):
+    """------------------------------------------------DEFENCE------------------------------------------------"""
+
+    def build_kamikaze_defence(self, game_state):
+        right_explode_point = [[7,7]]
+        left_explode_point = [[20,7]]
+        # left and right coordinates of the point where demolishers are in range to kill interceptor at default explode point 
+        left_demolisher_point = [[18,11]]
+        right_demolisher_point = [[9,11]]
+        # right and left coordinates of kamikaze structures
+        right = [[20, 8], [21, 8], [19, 7], [18, 6], [17, 5], [17, 4]]
+        left = [[6, 8], [7, 8], [8, 7], [9, 6], [10, 5], [10, 4]]
+        game_state.attempt_spawn(WALL, right + left)
+
+    def spawn_kamikaze(self, game_state, left = [[18,4]], right = [[9,4]], left_num = 1, right_num = 1):
+        """
+        This function assumes that there are enough resources to spawn the amount given.
+        Shall be handled by external function.
+        """
+        while left_num > 0 or right_num > 0:
+            if left_num > 0:
+                game_state.attempt_spawn(INTERCEPTOR, left)
+                left_num -= 1
+            if right_num > 0:
+                game_state.attempt_spawn(INTERCEPTOR, right)
+                right_num -= 1
+
+    def rebuild_corner_defence(self, game_state, wall_locations, exceptions=[], health_threshold=65):
+        """
+        Rebuild corner defence (defence that should exist every turn) if their health is less than 
+        `health_threshold`. 
+        Also will build walls if they don't exist there so original attempt_spawn() in build_defences() function
+        is removed.
+        ----------
+        Parameters
+        ----------
+        `exceptions`: a list of lists containing coordinates of key walls that should not be rebuilt this round, default is []
+        `health_threshold`: Value is from 0-100
+        """
         for location in game_state.game_map:
             if (location in wall_locations) and (location not in exceptions):
                 # if wall currently exists at the location, check its health
@@ -123,6 +151,48 @@ class AlgoStrategy(gamelib.AlgoCore):
                 # if wall doesn't exist in the location
                 else:
                     game_state.attempt_spawn(WALL, location)
+
+    def handle_corner_defence(self, game_state):
+        # Place turrets that attack enemy units
+        turret_locations = [[3,12],[24,12]]
+        # attempt_spawn will try to spawn units if we have resources, and will check if a blocking unit is already there
+        game_state.attempt_spawn(TURRET, turret_locations)
+        # Place walls in front of turrets to soak up damage for them
+        left_wall_locations = [[24, 13], [25, 13], [26, 13], [27, 13], [23, 12]]
+        right_wall_locations = [[0, 13], [1, 13], [2, 13], [3, 13], [4, 12]]
+        wall_locations = left_wall_locations + right_wall_locations
+        # build walls if they don't exist, mark walls that are lower than health threshold for removal and rebuild.
+        self.rebuild_corner_defence(game_state, wall_locations)
+        # upgrade walls so they soak more damage
+        game_state.attempt_upgrade(wall_locations)
+
+    def handle_center_defence(self, game_state):
+        # Walls
+        right_key_wall = [[11,10]]
+        right_helper_walls = [[11, 10], [10, 9], [12, 9]] 
+        left_key_wall = [[16,10]]
+        left_helper_walls = [[15, 9], [17, 9]] 
+        # Turrets
+        right_turret = [[11,9]]
+        left_turret = [[16,9]]
+        game_state.attempt_spawn(TURRET, right_turret)
+        game_state.attempt_spawn(WALL, right_key_wall)
+        game_state.attempt_upgrade(right_key_wall)
+
+        if (game_state.get_resource(SP, SELF) >= 6.5):
+            game_state.attempt_spawn(TURRET, left_turret)
+            game_state.attempt_spawn(WALL, left_key_wall)
+            game_state.attempt_upgrade(left_key_wall)
+
+        if (game_state.get_resource(SP,SELF) >= 3):
+            game_state.attempt_spawn(WALL, right_helper_walls)
+            game_state.attempt_upgrade(right_helper_walls)
+
+        if (game_state.get_resource(SP,SELF) >= 3):
+            game_state.attempt_spawn(WALL, left_helper_walls)
+            game_state.attempt_upgrade(left_helper_walls)
+        
+            
     
     def build_defences(self, game_state):
         """
@@ -131,29 +201,23 @@ class AlgoStrategy(gamelib.AlgoCore):
         """
         # Useful tool for setting up your base locations: https://www.kevinbai.design/terminal-map-maker
         # More community tools available at: https://terminal.c1games.com/rules#Download
-
-        # Place turrets that attack enemy units
-        turret_locations = [[2,12],[25,12]]
-        # attempt_spawn will try to spawn units if we have resources, and will check if a blocking unit is already there
-        game_state.attempt_spawn(TURRET, turret_locations)
+        self.handle_corner_defence(game_state)
+        self.build_kamikaze_defence(game_state)
+        if (game_state.get_resource(SP, SELF) >= 6.5):
+            self.handle_center_defence(game_state)
+        self.spawn_kamikaze(game_state)
         
-        # Place walls in front of turrets to soak up damage for them
-        wall_locations = [[24, 13],[25, 13],[26, 13],[27, 13], [0, 13],[1, 13],[2, 13],[3, 13]]
-        # build walls if they don't exist, mark walls that are lower than health threshold for removal and rebuild.
-        self.rebuild_key_walls(game_state, wall_locations)
-        # upgrade walls so they soak more damage
-        game_state.attempt_upgrade(wall_locations)
 
-    def build_reactive_defense(self, game_state):
-        """
-        This function builds reactive defenses based on where the enemy scored on us from.
-        We can track where the opponent scored by looking at events in action frames 
-        as shown in the on_action_frame function
-        """
-        for location in self.scored_on_locations:
-            # Build turret one space above so that it doesn't block our own edge spawn locations
-            build_location = [location[0], location[1]+1]
-            game_state.attempt_spawn(TURRET, build_location)
+    # def build_reactive_defense(self, game_state):
+    #     """
+    #     This function builds reactive defenses based on where the enemy scored on us from.
+    #     We can track where the opponent scored by looking at events in action frames 
+    #     as shown in the on_action_frame function
+    #     """
+    #     for location in self.scored_on_locations:
+    #         # Build turret one space above so that it doesn't block our own edge spawn locations
+    #         build_location = [location[0], location[1]+1]
+    #         game_state.attempt_spawn(TURRET, build_location)
 
     def stall_with_interceptors(self, game_state):
         """
@@ -178,27 +242,27 @@ class AlgoStrategy(gamelib.AlgoCore):
             units can occupy the same space.
             """
 
-    def demolisher_line_strategy(self, game_state):
-        """
-        Build a line of the cheapest stationary unit so our demolisher can attack from long range.
-        """
-        # First let's figure out the cheapest unit
-        # We could just check the game rules, but this demonstrates how to use the GameUnit class
-        stationary_units = [WALL, TURRET, SUPPORT]
-        cheapest_unit = WALL
-        for unit in stationary_units:
-            unit_class = gamelib.GameUnit(unit, game_state.config)
-            if unit_class.cost[game_state.MP] < gamelib.GameUnit(cheapest_unit, game_state.config).cost[game_state.MP]:
-                cheapest_unit = unit
+    # def demolisher_line_strategy(self, game_state):
+    #     """
+    #     Build a line of the cheapest stationary unit so our demolisher can attack from long range.
+    #     """
+    #     # First let's figure out the cheapest unit
+    #     # We could just check the game rules, but this demonstrates how to use the GameUnit class
+    #     stationary_units = [WALL, TURRET, SUPPORT]
+    #     cheapest_unit = WALL
+    #     for unit in stationary_units:
+    #         unit_class = gamelib.GameUnit(unit, game_state.config)
+    #         if unit_class.cost[game_state.MP] < gamelib.GameUnit(cheapest_unit, game_state.config).cost[game_state.MP]:
+    #             cheapest_unit = unit
 
-        # Now let's build out a line of stationary units. This will prevent our demolisher from running into the enemy base.
-        # Instead they will stay at the perfect distance to attack the front two rows of the enemy base.
-        for x in range(27, 5, -1):
-            game_state.attempt_spawn(cheapest_unit, [x, 11])
+    #     # Now let's build out a line of stationary units. This will prevent our demolisher from running into the enemy base.
+    #     # Instead they will stay at the perfect distance to attack the front two rows of the enemy base.
+    #     for x in range(27, 5, -1):
+    #         game_state.attempt_spawn(cheapest_unit, [x, 11])
 
-        # Now spawn demolishers next to the line
-        # By asking attempt_spawn to spawn 1000 units, it will essentially spawn as many as we have resources for
-        game_state.attempt_spawn(DEMOLISHER, [24, 10], 1000)
+    #     # Now spawn demolishers next to the line
+    #     # By asking attempt_spawn to spawn 1000 units, it will essentially spawn as many as we have resources for
+    #     game_state.attempt_spawn(DEMOLISHER, [24, 10], 1000)
 
     def least_damage_spawn_location(self, game_state, location_options):
         """
