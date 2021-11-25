@@ -53,10 +53,14 @@ class AlgoStrategy(gamelib.AlgoCore):
         game engine.
         """
         game_state = gamelib.GameState(self.config, turn_state)
+
+        # game_state.attempt_spawn(DEMOLISHER, [24, 10], 3)
+
         gamelib.debug_write('Performing turn {} of your custom algo strategy'.format(game_state.turn_number))
         game_state.suppress_warnings(True)  #Comment or remove this line to enable warnings.
 
-        self.starter_strategy(game_state)
+        # self.starter_strategy(game_state)
+        self.test_detections(game_state)
 
         game_state.submit_turn()
 
@@ -65,6 +69,18 @@ class AlgoStrategy(gamelib.AlgoCore):
     NOTE: All the methods after this point are part of the sample starter-algo
     strategy and can safely be replaced for your custom algo.
     """
+
+    def test_detections(self, game_state):
+        left_side_units, right_side_units = self.weaker_side(game_state, unit_type=None)
+        if left_side_units > right_side_units:
+            wall_locations = [[0, 13], [1, 13]]
+            gamelib.debug_write("Left Side is more defended")
+        elif right_side_units > left_side_units:
+            wall_locations = [[27, 13], [26, 13]]
+            gamelib.debug_write("Right Side is more defended")
+        else:
+            wall_locations = [[13, 13], [14, 13]]
+        game_state.attempt_spawn(WALL, wall_locations)
 
     def starter_strategy(self, game_state):
         """
@@ -202,7 +218,38 @@ class AlgoStrategy(gamelib.AlgoCore):
                 for unit in game_state.game_map[location]:
                     if unit.player_index == 1 and (unit_type is None or unit.unit_type == unit_type) and (valid_x is None or location[0] in valid_x) and (valid_y is None or location[1] in valid_y):
                         total_units += 1
+                        # units_location.append(location)
         return total_units
+
+    def weaker_side(self, game_state, unit_type=None):
+        left_side_units = 0
+        left = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+
+        right_side_units = 0
+        right = [14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27]
+
+        for location in game_state.game_map:
+            if game_state.contains_stationary_unit(location):
+                for unit in game_state.game_map[location]:
+                    if unit.player_index == 1 and (unit_type is None or unit.unit_type == unit_type) and (left is None or location[0] in left):
+                        left_side_units += 1
+                    elif unit.player_index == 1 and (unit_type is None or unit.unit_type == unit_type) and (right is None or location[0] in right):
+                        right_side_units += 1
+        
+        return left_side_units, right_side_units
+        
+
+    def find_enemy_turrets(self, game_state, unit_type=None, valid_x = None, valid_y = None):
+        total_turrets = 0
+        turret_locations = []
+        for location in game_state.game_map:
+            if game_state.contains_stationary_unit(location) == "TURRET":
+                for unit in game_state.game_map[location]:
+                    if unit.player_index == 1 and (unit_type is None or unit.unit_type == unit_type) and (valid_x is None or location[0] in valid_x) and (valid_y is None or location[1] in valid_y):
+                        total_turrets += 1
+                        turret_locations.append(location)
+        return total_turrets, turret_locations
+
         
     def filter_blocked_locations(self, locations, game_state):
         filtered = []
