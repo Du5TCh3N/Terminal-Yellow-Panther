@@ -101,6 +101,29 @@ class AlgoStrategy(gamelib.AlgoCore):
                 support_locations = [[13, 2], [14, 2], [13, 3], [14, 3]]
                 game_state.attempt_spawn(SUPPORT, support_locations)
 
+    """
+    Rebuild key walls (walls that must exist every turn) if their health is less than 
+    `health_threshold`. 
+    Also will build walls if they don't exist there so original attempt_spawn() in build_defences() function
+    is removed.
+    ----------
+    Parameters
+    ----------
+    `exceptions`: a list of lists containing coordinates of key walls that should not be rebuilt this round, default is []
+    `health_threshold`: Value is from 0-100
+    """
+    def rebuild_key_walls(self, game_state, wall_locations, exceptions=[], health_threshold=65):
+        for location in game_state.game_map:
+            if (location in wall_locations) and (location not in exceptions):
+                # if wall currently exists at the location, check its health
+                if game_state.contains_stationary_unit(location):
+                    for unit in game_state.game_map[location]:
+                        if unit.player_index == 0 and (unit.unit_type == WALL) and (unit.health <= (health_threshold/100) * unit.max_health):
+                            game_state.attempt_remove(location)
+                # if wall doesn't exist in the location
+                else:
+                    game_state.attempt_spawn(WALL, location)
+    
     def build_defences(self, game_state):
         """
         Build basic defenses using hardcoded locations.
@@ -110,13 +133,14 @@ class AlgoStrategy(gamelib.AlgoCore):
         # More community tools available at: https://terminal.c1games.com/rules#Download
 
         # Place turrets that attack enemy units
-        turret_locations = [[0, 13], [27, 13], [8, 11], [19, 11], [13, 11], [14, 11]]
+        turret_locations = [[2,12],[25,12]]
         # attempt_spawn will try to spawn units if we have resources, and will check if a blocking unit is already there
         game_state.attempt_spawn(TURRET, turret_locations)
         
         # Place walls in front of turrets to soak up damage for them
-        wall_locations = [[8, 12], [19, 12]]
-        game_state.attempt_spawn(WALL, wall_locations)
+        wall_locations = [[24, 13],[25, 13],[26, 13],[27, 13], [0, 13],[1, 13],[2, 13],[3, 13]]
+        # build walls if they don't exist, mark walls that are lower than health threshold for removal and rebuild.
+        self.rebuild_key_walls(game_state, wall_locations)
         # upgrade walls so they soak more damage
         game_state.attempt_upgrade(wall_locations)
 
