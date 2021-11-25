@@ -82,6 +82,9 @@ class AlgoStrategy(gamelib.AlgoCore):
             wall_locations = [[13, 13], [14, 13]]
         game_state.attempt_spawn(WALL, wall_locations)
 
+        total_units = self.get_enemy_list(game_state, unit_type=None)
+        gamelib.debug_write(total_units)
+
     def starter_strategy(self, game_state):
         """
         For defense we will use a spread out layout and some interceptors early on.
@@ -219,6 +222,15 @@ class AlgoStrategy(gamelib.AlgoCore):
                     if unit.player_index == 1 and (unit_type is None or unit.unit_type == unit_type) and (valid_x is None or location[0] in valid_x) and (valid_y is None or location[1] in valid_y):
                         total_units += 1
                         # units_location.append(location)
+        return total_units
+
+    def get_enemy_list(self, game_state, unit_type=None):
+        total_units = []
+        for location in game_state.game_map:
+            if game_state.contains_stationary_unit(location):
+                for unit in game_state.game_map[location]:
+                    if unit.player_index == 1 and (unit_type is None or unit.unit_type == unit_type):
+                        total_units.append(location)
         return total_units
 
     def weaker_side(self, game_state, unit_type=None):
