@@ -27,6 +27,7 @@ Examples:
 
 On Unix:
 ```
+
 $ ./scripts/test_algo_mac python-algo/
 $ ./scripts/test_algo_mac java-algo/algo-target/
 $ ./scripts/test_algo_mac java-algo/algo-target/ ~/Downloads/my_replay.replay
