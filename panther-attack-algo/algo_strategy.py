@@ -257,13 +257,78 @@ class AlgoStrategy(gamelib.AlgoCore):
         for location in game_state.game_map:
             if game_state.contains_stationary_unit(location):
                 for unit in game_state.game_map[location]:
-                    if unit.player_index == 1 and (unit_type is None or unit.unit_type == unit_type) and (left is None or location[0] in left):
-                        left_side_units += 1
-                    elif unit.player_index == 1 and (unit_type is None or unit.unit_type == unit_type) and (right is None or location[0] in right):
-                        right_side_units += 1
+                    if unit.player_index == 1 and (left is None or location[0] in left):
+                        if unit.unit_type == WALL:
+                            left_side_units += 1
+                        elif unit.unit_type == TURRET:
+                            left_side_units += 12
+                        elif unit.unit_type == SUPPORT:
+                            left_side_units += 1
+                    elif unit.player_index == 1 and (right is None or location[0] in right):
+                        if unit.unit_type == WALL:
+                            left_side_units += 1
+                        elif unit.unit_type == TURRET:
+                            left_side_units += 12
+                        elif unit.unit_type == SUPPORT:
+                            left_side_units += 1
         
         return left_side_units, right_side_units
+    
+    # This function finds a strength indicator for top left, top right, bottom left, and bottom right of the board
+    # Returning the TOP LEFT, TOP RIGHT, BOTTOM LEFT, BOTTOM RIGHT in string, and the  
+    def weaker_quadrant(self, game_state):
+        top_left_side_strength = 0
+        top_right_side_strength = 0
+        bottom_left_side_strength = 0
+        bottom_right_side_strength = 0
+
+        for location in game_state.game_map:
+            if game_state.contains_stationary_unit(location):
+                for unit in game_state.game_map[location]:
+                    # Check if location is in top left: 6 <= x <= 13 and 20 <= y <= 27
+                    if unit.player_index == 1 and (location[0] >= 6 or location[0] <= 13) and (location[1] >= 20 or location[1] <= 27):
+                        if unit.unit_type == WALL:
+                            top_left_side_strength += 1
+                        elif unit.unit_type == TURRET:
+                            top_left_side_strength += 12
+                        elif unit.unit_type == SUPPORT:
+                            top_left_side_strength += 1
+                    # Check if location is in top right: 14 <= x <= 21 and 20 <= y <= 27
+                    elif unit.player_index == 1 and (location[0] >= 14 or location[0] <= 21) and (location[1] >= 20 or location[1] <= 27):
+                        if unit.unit_type == WALL:
+                            top_right_side_strength += 1
+                        elif unit.unit_type == TURRET:
+                            top_right_side_strength += 12
+                        elif unit.unit_type == SUPPORT:
+                            top_right_side_strength += 1
+                    # Check if location is in bottom left: 0 <= x <= 13 and 14 <= y <= 19
+                    elif unit.player_index == 1 and (location[0] >= 0 or location[0] <= 13) and (location[1] >= 14 or location[1] <= 19):
+                        if unit.unit_type == WALL:
+                            bottom_left_side_strength += 1
+                        elif unit.unit_type == TURRET:
+                            bottom_left_side_strength += 12
+                        elif unit.unit_type == SUPPORT:
+                            bottom_left_side_strength += 1
+                    # Check if location is in bottom right: 14 <= x <= 27 and 14 <= y <= 19
+                    elif unit.player_index == 1 and (location[0] >= 14 or location[0] <= 27) and (location[1] >= 14 or location[1] <= 19):
+                        if unit.unit_type == WALL:
+                            bottom_right_side_strength += 1
+                        elif unit.unit_type == TURRET:
+                            bottom_right_side_strength += 12
+                        elif unit.unit_type == SUPPORT:
+                            bottom_right_side_strength += 1
         
+        four_quadrants = [top_left_side_strength, top_right_side_strength, bottom_left_side_strength, bottom_right_side_strength]
+        weakest = min(four_quadrants)
+        if weakest == top_left_side_strength:
+            return "TOP LEFT"
+        elif weakest == top_right_side_strength:
+            return "TOP RIGHT"
+        elif weakest == bottom_left_side_strength:
+            return "BOTTOM LEFT"
+        elif weakest == bottom_right_side_strength:
+            return "BOTTOM RIGHT"
+
     # This function search for TURRETS
     # returns the number of turrets and a list of their location
     def find_enemy_turrets(self, game_state):
