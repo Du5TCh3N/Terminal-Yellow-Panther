@@ -78,6 +78,7 @@ class AlgoStrategy(gamelib.AlgoCore):
 
         gamelib.debug_write(number_of_turrets)
         gamelib.debug_write(enemy_turrets_locations)
+        gamelib.debug_write(self.find_largest_gap(game_state))
 
         if number_of_turrets == 1:
             gamelib.debug_write("1 Turret detected")
@@ -228,6 +229,9 @@ class AlgoStrategy(gamelib.AlgoCore):
                         # units_location.append(location)
         return total_units
 
+    # This function extends the detect_enemy_unit function
+    # Takes the game_state and a unit_type, if no unit_type is specified then selects all units. 
+    # Returns a list of unit locations
     def get_enemy_list(self, game_state, unit_type=None):
         total_units = []
         for location in game_state.game_map:
@@ -237,6 +241,8 @@ class AlgoStrategy(gamelib.AlgoCore):
                         total_units.append(location)
         return total_units
 
+    # This functions finds the number of units in the left and right side of the opponent's board
+    # Returns the number of units in left and right in INT
     def weaker_side(self, game_state, unit_type=None):
         left_side_units = 0
         left = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
@@ -254,7 +260,8 @@ class AlgoStrategy(gamelib.AlgoCore):
         
         return left_side_units, right_side_units
         
-
+    # This function search for TURRETS
+    # returns the number of turrets and a list of their location
     def find_enemy_turrets(self, game_state):
         total_turrets = 0
         turret_locations = []
@@ -266,6 +273,7 @@ class AlgoStrategy(gamelib.AlgoCore):
                         turret_locations.append(location)
         return total_turrets, turret_locations
 
+    # This function returns a list of coordinates that are covered by a turret
     def turret_covered_locatons(self, game_state):
         covered_locations = []
         number_of_turrets, enemy_turrets_locations = self.find_enemy_turrets(game_state)
@@ -315,8 +323,35 @@ class AlgoStrategy(gamelib.AlgoCore):
             covered_locations.append([turret[0]+1, turret[1]-3])
 
         return covered_locations
-            
+    
+    # This function first connect all the enemy units
+    # Then look for the longest gap within them
+    def find_largest_gap(self, game_state):
+        largest_gap = 0
+        unit_map = []
+        location1 = [0,0]
+        location2 = [0,0]
 
+        unit_locations = self.get_enemy_list(game_state, unit_type=None)
+
+        for unit1 in unit_locations:
+            unit_locations.remove(unit1)
+            distance = float('inf')
+            closest_unit = []
+            for unit2 in unit_locations:
+                gap = game_state.game_map.distance_between_locations(unit1, unit2)
+                if gap < distance:
+                    distance = gap
+                    closest_unit = unit2
+            unit_map.append([unit1, closest_unit, distance])
+
+        for i in range(0, len(unit_map)):
+            if unit_map[i][2] > largest_gap:
+                largest_gap = unit_map[i][2]
+                location1 = unit_map[i][0]
+                location2 = unit_map[i][1]
+
+        return largest_gap, location1, location2
         
     def filter_blocked_locations(self, locations, game_state):
         filtered = []
