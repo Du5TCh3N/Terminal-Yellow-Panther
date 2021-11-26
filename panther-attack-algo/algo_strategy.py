@@ -1,3 +1,4 @@
+from typing import Counter
 import gamelib
 import random
 import math
@@ -43,6 +44,9 @@ class AlgoStrategy(gamelib.AlgoCore):
         SP = 0
         # This is a good place to do initial setup
         self.scored_on_locations = []
+        self.enemy_scout_spawn_locations = {}
+        self.enemy_demolisher_spawn_locations = {}
+        self.enemy_interceptor_spawn_locations = {}
 
     def on_turn(self, turn_state):
         """
@@ -360,6 +364,9 @@ class AlgoStrategy(gamelib.AlgoCore):
                 filtered.append(location)
         return filtered
 
+    # def find_most_common_spawn_location(self, game_state):
+        
+
     def on_action_frame(self, turn_string):
         """
         This is the action frame of the game. This function could be called 
@@ -380,6 +387,37 @@ class AlgoStrategy(gamelib.AlgoCore):
                 gamelib.debug_write("Got scored on at: {}".format(location))
                 self.scored_on_locations.append(location)
                 gamelib.debug_write("All locations: {}".format(self.scored_on_locations))
+        spawns = events["spawn"]
+        for spawn in spawns:
+            location = tuple(spawn[0])
+            unit_owner_self = True if spawn[3] == 1 else False
+
+            if not unit_owner_self:
+                if spawn[1] == 3:
+                    if location in self.enemy_scout_spawn_locations:
+                        self.enemy_scout_spawn_locations[location] += 1
+                    else:
+                        self.enemy_scout_spawn_locations[location] = 1
+                    gamelib.debug_write("Enemy spawned scout")
+                    gamelib.debug_write("At: {}".format(location))
+                    gamelib.debug_write("Scouts: {}".format(self.enemy_scout_spawn_locations))
+                elif spawn[1] == 4:
+                    if location in self.enemy_demolisher_spawn_locations:
+                        self.enemy_demolisher_spawn_locations[location] += 1
+                    else:
+                        self.enemy_demolisher_spawn_locations[location] = 1
+                    gamelib.debug_write("Enemy spawned demolisher")
+                    gamelib.debug_write("At: {}".format(location))
+                    gamelib.debug_write("Demolisher: {}".format(self.enemy_demolisher_spawn_locations))
+                elif spawn[1] == 5: # 3, 4, 5 stands for scout, demolisher, interceptor
+                    if location in self.enemy_interceptor_spawn_locations:
+                        self.enemy_interceptor_spawn_locations[location] += 1
+                    else:
+                        self.enemy_interceptor_spawn_locations[location] = 1
+                    gamelib.debug_write("Enemy spawned interceptor")
+                    gamelib.debug_write("At: {}".format(location))
+                    gamelib.debug_write("Interceptor: {}".format(self.enemy_interceptor_spawn_locations))
+            
 
 
 if __name__ == "__main__":
