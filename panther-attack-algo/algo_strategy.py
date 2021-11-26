@@ -70,20 +70,24 @@ class AlgoStrategy(gamelib.AlgoCore):
     strategy and can safely be replaced for your custom algo.
     """
 
-    def test_detections(self, game_state):
-        left_side_units, right_side_units = self.weaker_side(game_state, unit_type=None)
-        if left_side_units > right_side_units:
-            wall_locations = [[0, 13], [1, 13]]
-            gamelib.debug_write("Left Side is more defended")
-        elif right_side_units > left_side_units:
-            wall_locations = [[27, 13], [26, 13]]
-            gamelib.debug_write("Right Side is more defended")
-        else:
-            wall_locations = [[13, 13], [14, 13]]
-        game_state.attempt_spawn(WALL, wall_locations)
+    def test_detections(self, game_state):        
 
-        total_units = self.get_enemy_list(game_state, unit_type=None)
-        gamelib.debug_write(total_units)
+        wall_locations = [[13, 0]]
+    
+        number_of_turrets, enemy_turrets_locations = self.find_enemy_turrets(game_state)
+
+        gamelib.debug_write(number_of_turrets)
+        gamelib.debug_write(enemy_turrets_locations)
+
+        if number_of_turrets == 1:
+            gamelib.debug_write("1 Turret detected")
+            wall_locations = [[0, 13]]
+
+        elif number_of_turrets == 2:
+            gamelib.debug_write("2 Turret detected")
+            wall_locations = [[0, 13], [1, 13]]
+
+        game_state.attempt_spawn(WALL, wall_locations)
 
     def starter_strategy(self, game_state):
         """
@@ -251,16 +255,67 @@ class AlgoStrategy(gamelib.AlgoCore):
         return left_side_units, right_side_units
         
 
-    def find_enemy_turrets(self, game_state, unit_type=None, valid_x = None, valid_y = None):
+    def find_enemy_turrets(self, game_state):
         total_turrets = 0
         turret_locations = []
         for location in game_state.game_map:
-            if game_state.contains_stationary_unit(location) == "TURRET":
+            if game_state.contains_stationary_unit(location):
                 for unit in game_state.game_map[location]:
-                    if unit.player_index == 1 and (unit_type is None or unit.unit_type == unit_type) and (valid_x is None or location[0] in valid_x) and (valid_y is None or location[1] in valid_y):
+                    if unit.player_index == 1 and unit.unit_type == TURRET:
                         total_turrets += 1
                         turret_locations.append(location)
         return total_turrets, turret_locations
+
+    def turret_covered_locatons(self, game_state):
+        covered_locations = []
+        number_of_turrets, enemy_turrets_locations = self.find_enemy_turrets(game_state)
+        for turret in enemy_turrets_locations:
+            covered_locations.append([turret[0]-1, turret[1]+3])
+            covered_locations.append([turret[0], turret[1]+3])
+            covered_locations.append([turret[0]+1, turret[1]+3])
+
+            covered_locations.append([turret[0]-2, turret[1]+2])
+            covered_locations.append([turret[0]-1, turret[1]+2])
+            covered_locations.append([turret[0], turret[1]+2])
+            covered_locations.append([turret[0]+1, turret[1]+2])
+            covered_locations.append([turret[0]+2, turret[1]+2])
+
+            covered_locations.append([turret[0]-3, turret[1]+1])
+            covered_locations.append([turret[0]-2, turret[1]+1])
+            covered_locations.append([turret[0]-1, turret[1]+1])
+            covered_locations.append([turret[0], turret[1]+1])
+            covered_locations.append([turret[0]+1, turret[1]+1])
+            covered_locations.append([turret[0]+2, turret[1]+1])
+            covered_locations.append([turret[0]+3, turret[1]+1])
+
+            covered_locations.append([turret[0]-3, turret[1]])
+            covered_locations.append([turret[0]-2, turret[1]])
+            covered_locations.append([turret[0]-1, turret[1]])
+            covered_locations.append([turret[0], turret[1]])
+            covered_locations.append([turret[0]+1, turret[1]])
+            covered_locations.append([turret[0]+2, turret[1]])
+            covered_locations.append([turret[0]+3, turret[1]])
+
+            covered_locations.append([turret[0]-3, turret[1]-1])
+            covered_locations.append([turret[0]-2, turret[1]-1])
+            covered_locations.append([turret[0]-1, turret[1]-1])
+            covered_locations.append([turret[0], turret[1]-1])
+            covered_locations.append([turret[0]+1, turret[1]-1])
+            covered_locations.append([turret[0]+2, turret[1]-1])
+            covered_locations.append([turret[0]+3, turret[1]-1])
+
+            covered_locations.append([turret[0]-2, turret[1]-2])
+            covered_locations.append([turret[0]-1, turret[1]-2])
+            covered_locations.append([turret[0], turret[1]-2])
+            covered_locations.append([turret[0]+1, turret[1]-2])
+            covered_locations.append([turret[0]+2, turret[1]-2])
+
+            covered_locations.append([turret[0]-1, turret[1]-3])
+            covered_locations.append([turret[0], turret[1]-3])
+            covered_locations.append([turret[0]+1, turret[1]-3])
+
+        return covered_locations
+            
 
         
     def filter_blocked_locations(self, locations, game_state):
