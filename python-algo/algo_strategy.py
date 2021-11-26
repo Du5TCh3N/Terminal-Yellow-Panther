@@ -135,11 +135,18 @@ class AlgoStrategy(gamelib.AlgoCore):
         deltaY = enemy_location[1] - kamikaze_location[1]
         return deltaX**2 + deltaY**2 <= enemy_range**2
      
-    def asdf(self, starting_location):
-        # Get start positions from dictionary
-        # Using game_state.find_path_to_edge() for every start_location get the path of the unit
-        # Count the number of steps
-        return
+    def kamikaze_ideal_steps(self, game_state, starting_location, suicide_points=[[7,7],[20,7]]):
+        path = game_state.find_path_to_edge(starting_location)
+        idealSteps = {}
+        for step, point in enumerate(path):
+            if "left" not in idealSteps and self.in_kamikaze_range(point, suicide_points[0]):
+                idealSteps["left"] = (step // 4) + 1
+            if "right" not in idealSteps and self.in_kamikaze_range(point, suicide_points[1]):
+                idealSteps["right"] = (step // 4) + 1
+            if "left" in idealSteps and "right" in idealSteps:
+                break
+        return idealSteps
+        
     
     """--------------------------ATTACK--------------------------"""
     def attack_focus(self, game_state):
