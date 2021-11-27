@@ -1,5 +1,7 @@
 *.DS_Store*
 *.replay
+*replays
+
 *__pycache__*
 
 algos/*
