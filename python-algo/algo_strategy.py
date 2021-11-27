@@ -385,6 +385,8 @@ class AlgoStrategy(gamelib.AlgoCore):
     #     # By asking attempt_spawn to spawn 1000 units, it will essentially spawn as many as we have resources for
     #     game_state.attempt_spawn(DEMOLISHER, [24, 10], 1000)
 
+    """------------------------------------------------INTEL------------------------------------------------"""
+
     def least_damage_spawn_location(self, game_state, location_options):
         """
         This function will help us guess which location is the safest to spawn moving units from.
