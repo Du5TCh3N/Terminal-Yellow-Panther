@@ -57,6 +57,8 @@ class AlgoStrategy(gamelib.AlgoCore):
         self.enemy_interceptor_spawn_locations = {}
         self.kamikaze_ready = False
 
+        self.enemy_mobile_points = []
+
     def on_turn(self, turn_state):
         """
         This function is called every turn with the game state wrapper as
@@ -87,6 +89,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         """
         # First, place basic defenses
         self.build_defences(game_state)
+
         # Now build reactive defenses based on where the enemy scored
         # self.build_reactive_defense(game_state)
 
@@ -120,11 +123,9 @@ class AlgoStrategy(gamelib.AlgoCore):
         corner_reinforcement_loc = [[1, 12], [2, 12], [25, 12], [26, 12]]
         game_state.attempt_spawn(WALL, corner_reinforcement_loc)
         if game_state.get_resource(SP, SELF) > 20:
-
             right = [[20, 8], [20, 9], [19, 7], [18, 6], [17, 5], [17, 4], [21, 10], [22, 10], [23, 10]]
             left = [[7, 9], [7, 8], [8, 7], [9, 6], [10, 5], [10, 4], [4, 10], [5, 10], [6, 10]]
             game_state.attempt_upgrade(right + left)
-
 
     """--------------------PREDICTIVE PATHING--------------------"""
 
@@ -352,7 +353,6 @@ class AlgoStrategy(gamelib.AlgoCore):
         wall_locations = left_wall_locations + right_wall_locations
         game_state.attempt_upgrade(wall_locations)
 
-
     def handle_center_defence(self, game_state):
         # Walls
         left_key_wall = [[11, 10]]
@@ -366,7 +366,6 @@ class AlgoStrategy(gamelib.AlgoCore):
         game_state.attempt_spawn(TURRET, [[20, 11], [11, 9], [7, 11]])
         game_state.attempt_spawn(WALL, right_key_wall + left_key_wall)
         game_state.attempt_upgrade(right_key_wall)
-
 
         # Check if we have enough SP for both side
         if (game_state.get_resource(SP, SELF) >= 13):
@@ -394,8 +393,8 @@ class AlgoStrategy(gamelib.AlgoCore):
         game_state.attempt_spawn(WALL, right_helper_walls)
         game_state.attempt_spawn(WALL, left_helper_walls)
         game_state.attempt_upgrade(right_helper_walls)
-        game_state.attempt_upgrade(left_helper_walls)       
-         
+        game_state.attempt_upgrade(left_helper_walls)
+
     def turn1_defense(self, game_state):
         # SP: 5 (Walls) + 12 (Turrets) = 17
 
@@ -409,7 +408,8 @@ class AlgoStrategy(gamelib.AlgoCore):
         wall_locations = left_wall_locations + right_wall_locations
         game_state.attempt_spawn(WALL, wall_locations)
 
-        front_line_walls = [[5, 12], [6, 12], [7, 12], [8, 11], [9, 10], [18, 10], [19, 11], [20, 12], [21, 12], [22, 12]]
+        front_line_walls = [[5, 12], [6, 12], [7, 12], [8, 11], [9, 10], [18, 10], [19, 11], [20, 12], [21, 12],
+                            [22, 12]]
         game_state.attempt_spawn(WALL, front_line_walls)
 
         # SP: 12 (Turrets) + 1 (Key Wall) = 13
@@ -429,10 +429,11 @@ class AlgoStrategy(gamelib.AlgoCore):
         right_key_wall = [[16, 10], [15, 9], [17, 9]]
         right_wall_locations = [[23, 12], [24, 13], [25, 13], [26, 13], [27, 13]]
         left_wall_locations = [[4, 12], [3, 13], [2, 13], [1, 13], [0, 13]]
-        front_line_walls = [[5, 12], [6, 12], [7, 12], [8, 11], [9, 10], [18, 10], [19, 11], [20, 12], [21, 12], [22, 12]]
+        front_line_walls = [[5, 12], [6, 12], [7, 12], [8, 11], [9, 10], [18, 10], [19, 11], [20, 12], [21, 12],
+                            [22, 12]]
         game_state.attempt_spawn(WALL, front_line_walls)
-        game_state.attempt_upgrade(left_key_wall + right_key_wall + right_wall_locations + left_wall_locations + front_line_walls)
-
+        game_state.attempt_upgrade(
+            left_key_wall + right_key_wall + right_wall_locations + left_wall_locations + front_line_walls)
 
     def build_defences(self, game_state):
         """
@@ -460,19 +461,18 @@ class AlgoStrategy(gamelib.AlgoCore):
             if (game_state.get_resource(SP, SELF) > 4):
                 walls = [[11, 10], [16, 10]]
                 game_state.attempt_spawn(WALL, walls)
-        
+
         # Turn 5 - Should have 9 SP, build kamikaze walls
         elif (game_state.turn_number == 4):
             if (game_state.get_resource(SP, SELF) >= 9):
                 self.build_kamikaze_defence(game_state)
                 self.kamikaze_ready = True
-            
+
             self.handle_corner_defence(game_state)
             self.handle_center_defence(game_state)
 
         # Useful tool for setting up your base locations: https://www.kevinbai.design/terminal-map-maker
         # More community tools available at: https://terminal.c1games.com/rules#Download
-        
 
         # if (game_state.get_resource(SP, SELF) >= 6.5):
         else:
@@ -480,15 +480,17 @@ class AlgoStrategy(gamelib.AlgoCore):
             self.handle_center_defence(game_state)
 
             self.build_kamikaze_defence(game_state)
-        
-            if game_state.turn_number >= 5 and self.kamikaze_ready:
+            min_mobile_points = self.enemy_mobile(game_state)
+            if game_state.turn_number >= 5 and self.kamikaze_ready and game_state.get_resource(1,
+                                                                                               1) >= min_mobile_points:
                 self.spawn_kamikaze(game_state)
 
-            support_wall_loc = [[5, 12], [6, 12], [7, 12], [8, 11], [9, 10], [22, 12], [21, 12], [20, 12], [18, 10], [19, 11]]
+            support_wall_loc = [[5, 12], [6, 12], [7, 12], [8, 11], [9, 10], [22, 12], [21, 12], [20, 12], [18, 10],
+                                [19, 11]]
             game_state.attempt_spawn(WALL, support_wall_loc)
             # upgrade walls
             game_state.attempt_upgrade(support_wall_loc)
-            support_locations = [[10, 8], [11, 8], [16, 8], [17, 8], [21, 10], [22, 10], [4, 10], [5, 10]]
+            support_locations = [[10, 8], [11, 8], [16, 8], [17, 8], [23, 10], [22, 10], [4, 10], [5, 10]]
             game_state.attempt_spawn(SUPPORT, support_locations)
             game_state.attempt_upgrade(support_locations)
 
@@ -633,6 +635,22 @@ class AlgoStrategy(gamelib.AlgoCore):
             if not game_state.contains_stationary_unit(location):
                 filtered.append(location)
         return filtered
+
+    def enemy_mobile(self, game_state):
+        # return the minimum enemy mobile points that we need to be awared of
+        self.enemy_mobile_points.append(game_state.get_resource(1, 1))
+        gamelib.debug_write(self.enemy_mobile_points)
+        min_mobile_point = 0
+        difference = []
+        for i in range(1, len(self.enemy_mobile_points)):
+            if self.enemy_mobile_points[i - 1] + 5 - self.enemy_mobile_points[i] >= 10:
+                difference.append(self.enemy_mobile_points[i - 1] + 5 - self.enemy_mobile_points[i])
+        gamelib.debug_write(difference)
+        if difference:
+            if min(difference) >= 10:
+                return min(difference)
+        else:
+            return 10
 
     def count_attack(self, game_state):
         # if not self.enemy_scout_spawn_locations or not self.enemy_demolisher_spawn_locations:
