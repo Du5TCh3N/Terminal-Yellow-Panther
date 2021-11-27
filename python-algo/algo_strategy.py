@@ -489,6 +489,23 @@ class AlgoStrategy(gamelib.AlgoCore):
         else:
             self.turn_enemy_attack_stats[game_state.turn_number - 1] = 0
 
+    # This function takes unit_type as parameter (SCOUT, INTERCEPTOR, DEMOLISHER), and return the most spawned coordinate in [x, y] format
+    def most_spawn_location(self, unit_type=None):
+        if unit_type == SCOUT:
+            coordinate = max(self.enemy_scout_spawn_locations, key=self.enemy_scout_spawn_locations.get)
+            coordinate = list(coordinate)
+            return coordinate
+        elif unit_type == DEMOLISHER:
+            coordinate = max(self.enemy_demolisher_spawn_locations, key=self.enemy_demolisher_spawn_locations.get)
+            coordinate = list(coordinate)
+            return coordinate
+        elif unit_type == INTERCEPTOR:
+            coordinate = max(self.enemy_interceptor_spawn_locations, key=self.enemy_interceptor_spawn_locations.get)
+            coordinate = list(coordinate)
+            return coordinate
+        else:
+            return None
+
     def on_action_frame(self, turn_string):
         """
         This is the action frame of the game. This function could be called 
@@ -523,6 +540,7 @@ class AlgoStrategy(gamelib.AlgoCore):
 
                     if location in self.enemy_scout_spawn_locations:
                         self.enemy_scout_spawn_locations[location] += 1
+                        # self.most_spawn_location(unit_type=SCOUT)
                     else:
                         self.enemy_scout_spawn_locations[location] = 1
                     # gamelib.debug_write("Enemy spawned scout")
