@@ -32,7 +32,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         """
         gamelib.debug_write('Configuring your custom algo strategy...')
         self.config = config
-        global WALL, SUPPORT, TURRET, SCOUT, DEMOLISHER, INTERCEPTOR, MP, SP, SELF, ENEMY
+        global WALL, SUPPORT, TURRET, SCOUT, DEMOLISHER, INTERCEPTOR, MP, SP, SELF, ENEMY, SCOUT_RANGE, DEMOLISHER_RANGE, INTERCEPTOR_RANGE
         WALL = config["unitInformation"][0]["shorthand"]
         SUPPORT = config["unitInformation"][1]["shorthand"]
         TURRET = config["unitInformation"][2]["shorthand"]
@@ -43,6 +43,9 @@ class AlgoStrategy(gamelib.AlgoCore):
         SP = 0
         ENEMY = 1
         SELF = 0
+        SCOUT_RANGE = config["unitInformation"][3]["attackRange"]
+        DEMOLISHER_RANGE = config["unitInformation"][4]["attackRange"]
+        INTERCEPTOR_RANGE = config["unitInformation"][5]["attackRange"]
         # This is a good place to do initial setup
         self.scored_on_locations = []
 
@@ -110,6 +113,7 @@ class AlgoStrategy(gamelib.AlgoCore):
             left = [[6, 8], [7, 8], [8, 7], [9, 6], [10, 5], [10, 4]]
             game_state.attempt_upgrade(right + left)
 
+<<<<<<< HEAD
     """------------------------------------------------ATTACK------------------------------------------------"""
 
     def attack_walls(self, game_state):
@@ -117,6 +121,43 @@ class AlgoStrategy(gamelib.AlgoCore):
         right = [[9, 9], [6, 10], [7, 10], [8, 10]]
         game_state.attempt_remove(left + right)
 
+=======
+    """--------------------PREDICTIVE PATHING--------------------"""
+    
+    def in_kamikaze_range(self, enemy_location, suicide_location):
+        """
+        `enemy_location`: list of len 2 representing coordinates of hypothetical enemy unit
+        `suicide_location`: list of len2 representing coordinates of kamikaze suicide location
+        """
+        deltaX = enemy_location[0] - suicide_location[0]
+        deltaY = enemy_location[1] - suicide_location[1]
+        return deltaX**2 + deltaY**2 <= 81
+
+    def can_kill_kamikaze(self, enemy_location, enemy_range, kamikaze_location):
+        """
+        `enemy_location`: list of len 2 representing coordinates of hypothetical enemy unit
+        `enemy_range`: range of enemy unit
+        `suicide_location`: list of len2 representing coordinates of kamikaze suicide location
+        """
+        deltaX = enemy_location[0] - kamikaze_location[0]
+        deltaY = enemy_location[1] - kamikaze_location[1]
+        return deltaX**2 + deltaY**2 <= enemy_range**2
+     
+    def kamikaze_ideal_steps(self, game_state, starting_location, suicide_points=[[7,7],[20,7]]):
+        path = game_state.find_path_to_edge(starting_location)
+        idealSteps = {}
+        for step, point in enumerate(path):
+            if "left" not in idealSteps and self.in_kamikaze_range(point, suicide_points[0]):
+                idealSteps["left"] = (step // 4) + 1
+            if "right" not in idealSteps and self.in_kamikaze_range(point, suicide_points[1]):
+                idealSteps["right"] = (step // 4) + 1
+            if "left" in idealSteps and "right" in idealSteps:
+                break
+        return idealSteps
+        
+    
+    """--------------------------ATTACK--------------------------"""
+>>>>>>> pathing
     def attack_focus(self, game_state):
         """
         This function focuses on attacking one side of the opponent board
