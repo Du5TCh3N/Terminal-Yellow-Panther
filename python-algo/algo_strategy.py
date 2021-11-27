@@ -4,7 +4,7 @@ import math
 import warnings
 from sys import maxsize
 import json
-
+import copy
 """
 Most of the algo code you write will be in this file unless you create new
 modules yourself. Start by modifying the 'on_turn' function.
@@ -48,6 +48,12 @@ class AlgoStrategy(gamelib.AlgoCore):
         INTERCEPTOR_RANGE = config["unitInformation"][5]["attackRange"]
         # This is a good place to do initial setup
         self.scored_on_locations = []
+        self.turn_enemy_attack = []
+        self.turn_enemy_attack_pre = []
+        self.turn_enemy_attack_stats = {}
+        self.enemy_scout_spawn_locations = {}
+        self.enemy_demolisher_spawn_locations = {}
+        self.enemy_interceptor_spawn_locations = {}
 
     def on_turn(self, turn_state):
         """
@@ -100,6 +106,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         #     scout_spawn_location_options = [[13, 0], [14, 0]]
         #     best_location = self.least_damage_spawn_location(game_state, scout_spawn_location_options)
         #     game_state.attempt_spawn(SCOUT, best_location, 1000)
+        self.count_attack(game_state)
         if game_state.turn_number % 5 == 0:
             self.attack_walls(game_state)
         if game_state.turn_number % 6 == 0:
@@ -113,15 +120,8 @@ class AlgoStrategy(gamelib.AlgoCore):
             left = [[6, 8], [7, 8], [8, 7], [9, 6], [10, 5], [10, 4]]
             game_state.attempt_upgrade(right + left)
 
-    """------------------------------------------------ATTACK------------------------------------------------"""
-
-    def attack_walls(self, game_state):
-        left = [[21, 10], [20, 10], [19, 10], [18, 9]]
-        right = [[9, 9], [6, 10], [7, 10], [8, 10]]
-        game_state.attempt_remove(left + right)
-
     """--------------------PREDICTIVE PATHING--------------------"""
-    
+
     def in_kamikaze_range(self, enemy_location, suicide_location):
         """
         `enemy_location`: list of len 2 representing coordinates of hypothetical enemy unit
@@ -129,7 +129,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         """
         deltaX = enemy_location[0] - suicide_location[0]
         deltaY = enemy_location[1] - suicide_location[1]
-        return deltaX**2 + deltaY**2 <= 81
+        return deltaX ** 2 + deltaY ** 2 <= 81
 
     def can_kill_kamikaze(self, enemy_location, enemy_range, kamikaze_location):
         """
@@ -139,22 +139,27 @@ class AlgoStrategy(gamelib.AlgoCore):
         """
         deltaX = enemy_location[0] - kamikaze_location[0]
         deltaY = enemy_location[1] - kamikaze_location[1]
-        return deltaX**2 + deltaY**2 <= enemy_range**2
-     
-    def kamikaze_ideal_steps(self, game_state, starting_location, suicide_points=[[7,7],[20,7]]):
+        return deltaX ** 2 + deltaY ** 2 <= enemy_range ** 2
+
+    def kamikaze_ideal_steps(self, game_state, starting_location, suicide_points=[[7, 7], [20, 7]]):
         path = game_state.find_path_to_edge(starting_location)
         idealSteps = {}
         for step, point in enumerate(path):
             if "left" not in idealSteps and self.in_kamikaze_range(point, suicide_points[0]):
-                idealSteps["left"] = (step // 4) + 1
+                idealSteps["left"] = (step + 1 // 4) + 1
             if "right" not in idealSteps and self.in_kamikaze_range(point, suicide_points[1]):
-                idealSteps["right"] = (step // 4) + 1
+                idealSteps["right"] = (step + 1 // 4) + 1
             if "left" in idealSteps and "right" in idealSteps:
                 break
         return idealSteps
-        
-    
-    """--------------------------ATTACK--------------------------"""
+
+    """------------------------------------------------ATTACK------------------------------------------------"""
+
+    def attack_walls(self, game_state):
+        left = [[21, 10], [20, 10], [19, 10], [18, 9]]
+        right = [[9, 9], [6, 10], [7, 10], [8, 10]]
+        game_state.attempt_remove(left + right)
+
     def attack_focus(self, game_state):
         """
         This function focuses on attacking one side of the opponent board
@@ -455,6 +460,27 @@ class AlgoStrategy(gamelib.AlgoCore):
                 filtered.append(location)
         return filtered
 
+    def count_attack (self, game_state):
+        scout_count = copy.copy(self.enemy_scout_spawn_locations)
+        demolisher_count = copy.copy(self.enemy_demolisher_spawn_locations)
+        # interceptor_count = copy.copy(self.enemy_interceptor_spawn_locations)
+        self.turn_enemy_attack = [scout_count,
+                                      demolisher_count]
+        gamelib.debug_write("-------------------------------------------------------------------------------------------")
+        gamelib.debug_write(self.turn_enemy_attack)
+        gamelib.debug_write(self.turn_enemy_attack_pre)
+        gamelib.debug_write(self.turn_enemy_attack_stats)
+        gamelib.debug_write("-------------------------------------------------------------------------------------------")
+
+        if self.turn_enemy_attack_pre is None:
+            self.turn_enemy_attack_pre = self.turn_enemy_attack
+            self.turn_enemy_attack_stats[game_state.turn_number-1] = 1
+        elif self.turn_enemy_attack_pre != self.turn_enemy_attack:
+            self.turn_enemy_attack_pre = self.turn_enemy_attack
+            self.turn_enemy_attack_stats[game_state.turn_number - 1] = 1
+        else:
+            self.turn_enemy_attack_stats[game_state.turn_number - 1] = 0
+
     def on_action_frame(self, turn_string):
         """
         This is the action frame of the game. This function could be called 
@@ -475,6 +501,41 @@ class AlgoStrategy(gamelib.AlgoCore):
                 gamelib.debug_write("Got scored on at: {}".format(location))
                 self.scored_on_locations.append(location)
                 gamelib.debug_write("All locations: {}".format(self.scored_on_locations))
+        spawns = events["spawn"]
+        for spawn in spawns:
+            location = tuple(spawn[0])
+            unit_owner_self = True if spawn[3] == 1 else False
+
+            if not unit_owner_self:
+                if spawn[1] == 3:
+                    # if game_state.turn_number in self.turn_enemy_attack:
+                    #     self.turn_enemy_attack[game_state.turn_number] = [3, location, 1]
+                    # else:
+                    #     self.turn_enemy_attack[game_state.turn_number][2] += 1
+
+                    if location in self.enemy_scout_spawn_locations:
+                        self.enemy_scout_spawn_locations[location] += 1
+                    else:
+                        self.enemy_scout_spawn_locations[location] = 1
+                    # gamelib.debug_write("Enemy spawned scout")
+                    # gamelib.debug_write("At: {}".format(location))
+                    # gamelib.debug_write("Scouts: {}".format(self.enemy_scout_spawn_locations))
+                elif spawn[1] == 4:
+                    if location in self.enemy_demolisher_spawn_locations:
+                        self.enemy_demolisher_spawn_locations[location] += 1
+                    else:
+                        self.enemy_demolisher_spawn_locations[location] = 1
+                    # gamelib.debug_write("Enemy spawned demolisher")
+                    # gamelib.debug_write("At: {}".format(location))
+                    # gamelib.debug_write("Demolisher: {}".format(self.enemy_demolisher_spawn_locations))
+                elif spawn[1] == 5:  # 3, 4, 5 stands for scout, demolisher, interceptor
+                    if location in self.enemy_interceptor_spawn_locations:
+                        self.enemy_interceptor_spawn_locations[location] += 1
+                    else:
+                        self.enemy_interceptor_spawn_locations[location] = 1
+                    # gamelib.debug_write("Enemy spawned interceptor")
+                    # gamelib.debug_write("At: {}".format(location))
+                    # gamelib.debug_write("Interceptor: {}".format(self.enemy_interceptor_spawn_locations))
 
 
 if __name__ == "__main__":
