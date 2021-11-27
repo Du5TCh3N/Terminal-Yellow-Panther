@@ -122,7 +122,7 @@ class AlgoStrategy(gamelib.AlgoCore):
 
     """--------------------PREDICTIVE PATHING--------------------"""
 
-    def in_kamikaze_range(self, enemy_location, suicide_location):
+    def __in_kamikaze_range(self, enemy_location, suicide_location):
         """
         `enemy_location`: list of len 2 representing coordinates of hypothetical enemy unit
         `suicide_location`: list of len2 representing coordinates of kamikaze suicide location
@@ -131,7 +131,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         deltaY = enemy_location[1] - suicide_location[1]
         return deltaX ** 2 + deltaY ** 2 <= 81
 
-    def can_kill_kamikaze(self, enemy_location, enemy_range, kamikaze_location):
+    def __can_kill_kamikaze(self, enemy_location, enemy_range, kamikaze_location):
         """
         `enemy_location`: list of len 2 representing coordinates of hypothetical enemy unit
         `enemy_range`: range of enemy unit
@@ -141,17 +141,25 @@ class AlgoStrategy(gamelib.AlgoCore):
         deltaY = enemy_location[1] - kamikaze_location[1]
         return deltaX ** 2 + deltaY ** 2 <= enemy_range ** 2
 
-    def kamikaze_ideal_steps(self, game_state, starting_location, suicide_points=[[7, 7], [20, 7]]):
+    def kamikaze_ideal_steps(self, game_state, starting_location, suicide_points=[[7, 8], [20, 8]]):
+        if not starting_location:
+            return {"left": 5, "right": 5}
         path = game_state.find_path_to_edge(starting_location)
         idealSteps = {}
         for step, point in enumerate(path):
-            if "left" not in idealSteps and self.in_kamikaze_range(point, suicide_points[0]):
-                idealSteps["left"] = (step + 1 // 4) + 1
-            if "right" not in idealSteps and self.in_kamikaze_range(point, suicide_points[1]):
-                idealSteps["right"] = (step + 1 // 4) + 1
+            if "left" not in idealSteps and self.__in_kamikaze_range(point, suicide_points[0]):
+                idealSteps["left"] = (step + 1) // 4 + 1
+            if "right" not in idealSteps and self.__in_kamikaze_range(point, suicide_points[1]):
+                idealSteps["right"] = (step + 1) // 4 + 1
             if "left" in idealSteps and "right" in idealSteps:
                 break
+        if "left" not in idealSteps:
+            idealSteps["left"] = 0
+        if "right" not in idealSteps:
+            idealSteps["right"] = 0
         return idealSteps
+
+    
 
     """------------------------------------------------ATTACK------------------------------------------------"""
 
@@ -231,17 +239,61 @@ class AlgoStrategy(gamelib.AlgoCore):
         left = [[6, 8], [7, 8], [8, 7], [9, 6], [10, 5], [10, 4]]
         game_state.attempt_spawn(WALL, right + left)
 
-    def spawn_kamikaze(self, game_state, left=[[18, 4]], right=[[9, 4]], left_num=1, right_num=1):
+    def spawn_kamikaze(self, game_state, left=[[8,5]], right=[[19,5]], left_num=1, right_num=1):
         """
         This function assumes that there are enough resources to spawn the amount given.
         Shall be handled by external function.
         """
+        scouts = self.most_spawn_location(SCOUT)
+        demos = self.most_spawn_location(DEMOLISHER)
+
+        combined = left + right
+        scouts_lr = self.kamikaze_ideal_steps(game_state, scouts, [[7,7],[20,7]])
+        demos_lr = self.kamikaze_ideal_steps(game_state, demos, [[7,7],[20,7]]) 
+        
+
+        left_steps  = max(scouts_lr["left"], demos_lr["left"])
+        right_steps = max(scouts_lr["left"], demos_lr["left"])
+
+        gamelib.debug_write("Left to take ", left_steps)
+        gamelib.debug_write("Right to take ", right_steps)
+
         while left_num > 0 or right_num > 0:
             if left_num > 0:
-                game_state.attempt_spawn(INTERCEPTOR, left)
+                if left_steps % 2 == 1:
+                    game_state.attempt_remove([[6,8],[7,8]])
+                    if left_steps == 5:
+                        game_state.attempt_spawn(INTERCEPTOR, left)
+                    elif left_steps > 5:
+                        game_state.attempt_spawn(INTERCEPTOR, [[9,4]])
+                    else:
+                        game_state.attempt_spawn(INTERCEPTOR, [[7,6]])
+                else:
+                    game_state.attempt_spawn(WALL,[[6,8],[7,8]])
+                    if left_steps == 4:
+                        game_state.attempt_spawn(INTERCEPTOR, left)
+                    elif left_steps > 4:
+                        game_state.attempt_spawn(INTERCEPTOR, [[9,4]])
+                    else:
+                        game_state.attempt_spawn(INTERCEPTOR, [[7,6]])
                 left_num -= 1
             if right_num > 0:
-                game_state.attempt_spawn(INTERCEPTOR, right)
+                if right_steps % 2 == 1:
+                    game_state.attempt_remove([[20,8],[21,8]])
+                    if right_steps == 5:
+                        game_state.attempt_spawn(INTERCEPTOR, right)
+                    elif right_steps > 5:
+                        game_state.attempt_spawn(INTERCEPTOR, [[18,4]])
+                    else:
+                        game_state.attempt_spawn(INTERCEPTOR, [[20,6]])
+                else:
+                    game_state.attempt_spawn(WALL,[[20,8],[21,8]])
+                    if right_steps == 4:
+                        game_state.attempt_spawn(INTERCEPTOR, right)
+                    elif right_steps > 4:
+                        game_state.attempt_spawn(INTERCEPTOR, [[18,4]])
+                    else:
+                        game_state.attempt_spawn(INTERCEPTOR, [[20,6]])
                 right_num -= 1
 
     def rebuild_corner_defence(self, game_state, wall_locations, exceptions=[], health_threshold=65):
@@ -494,19 +546,22 @@ class AlgoStrategy(gamelib.AlgoCore):
     # This function takes unit_type as parameter (SCOUT, INTERCEPTOR, DEMOLISHER), and return the most spawned coordinate in [x, y] format
     def most_spawn_location(self, unit_type=None):
         if unit_type == SCOUT:
-            coordinate = max(self.enemy_scout_spawn_locations, key=self.enemy_scout_spawn_locations.get)
-            coordinate = list(coordinate)
-            return coordinate
+            if self.enemy_scout_spawn_locations:
+                coordinate = max(self.enemy_scout_spawn_locations, key=self.enemy_scout_spawn_locations.get)
+                coordinate = list(coordinate)
+                return coordinate
         elif unit_type == DEMOLISHER:
-            coordinate = max(self.enemy_demolisher_spawn_locations, key=self.enemy_demolisher_spawn_locations.get)
-            coordinate = list(coordinate)
-            return coordinate
+            if self.enemy_demolisher_spawn_locations:
+                coordinate = max(self.enemy_demolisher_spawn_locations, key=self.enemy_demolisher_spawn_locations.get)
+                coordinate = list(coordinate)
+                return coordinate
         elif unit_type == INTERCEPTOR:
-            coordinate = max(self.enemy_interceptor_spawn_locations, key=self.enemy_interceptor_spawn_locations.get)
-            coordinate = list(coordinate)
-            return coordinate
-        else:
-            return None
+            if self.enemy_interceptor_spawn_locations:
+                coordinate = max(self.enemy_interceptor_spawn_locations, key=self.enemy_interceptor_spawn_locations.get)
+                coordinate = list(coordinate)
+                return coordinate
+    
+        return None
 
     def on_action_frame(self, turn_string):
         """
