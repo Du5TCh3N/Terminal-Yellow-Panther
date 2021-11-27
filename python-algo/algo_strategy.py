@@ -192,7 +192,7 @@ class AlgoStrategy(gamelib.AlgoCore):
             #     scout_spawn_location_options_bottom = [[13, 0]]
             #     game_state.attempt_spawn(SCOUT, scout_spawn_location_options_bottom, 50)
             # else:
-            wall_flex_loc = [[9, 9], [6, 10], [7, 10]]
+            wall_flex_loc = [ [6, 10], [7, 10]]
             game_state.attempt_spawn(WALL, wall_flex_loc)
 
             demolisher_spawn_location_options_top = [[13, 0]]
@@ -228,8 +228,8 @@ class AlgoStrategy(gamelib.AlgoCore):
         left_demolisher_point = [[18, 11]]
         right_demolisher_point = [[9, 11]]
         # right and left coordinates of kamikaze structures
-        right = [[21, 7], [20, 8], [20, 9], [19, 7], [18, 6], [17, 5], [17, 4], [21, 10], [22, 10], [23, 10]]
-        left = [[6, 7], [7, 9], [7, 8], [8, 7], [9, 6], [10, 5], [10, 4], [6, 10], [5, 10], [4, 10]]
+        right = [[20, 6], [19, 7], [19, 8], [18, 6], [17, 5], [16, 4], [16, 3], [20, 9], [21, 9], [22, 9]]
+        left = [[7, 6], [7, 9],  [9, 6], [10, 5], [11, 4], [11, 3], [5, 9], [6, 9], [8, 7], [8, 8]]
         game_state.attempt_spawn(WALL, right + left)
 
     def spawn_kamikaze(self, game_state, left=[[18, 4]], right=[[9, 4]], left_num=1, right_num=1):
