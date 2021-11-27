@@ -5,6 +5,7 @@ import warnings
 from sys import maxsize
 import json
 import copy
+
 """
 Most of the algo code you write will be in this file unless you create new
 modules yourself. Start by modifying the 'on_turn' function.
@@ -27,8 +28,8 @@ class AlgoStrategy(gamelib.AlgoCore):
         gamelib.debug_write('Random seed: {}'.format(seed))
 
     def on_game_start(self, config):
-        """ 
-        Read in config and perform any initial setup here 
+        """
+        Read in config and perform any initial setup here
         """
         gamelib.debug_write('Configuring your custom algo strategy...')
         self.config = config
@@ -107,8 +108,8 @@ class AlgoStrategy(gamelib.AlgoCore):
         #     best_location = self.least_damage_spawn_location(game_state, scout_spawn_location_options)
         #     game_state.attempt_spawn(SCOUT, best_location, 1000)
         self.count_attack(game_state)
-        if game_state.turn_number % 5 == 0:
-            self.attack_walls(game_state)
+        # if game_state.turn_number % 5 == 0:
+        #     self.attack_walls(game_state)
         if game_state.turn_number % 6 == 0:
             # random number > 0.4 attack with scout only, otherwise combination of demolisher and scout
             self.attack_focus(game_state)
@@ -116,8 +117,8 @@ class AlgoStrategy(gamelib.AlgoCore):
             # Lastly, if we have spare SP, let's build some supports
 
         if game_state.get_resource(SP, SELF) > 20:
-            right = [[20, 8], [21, 8], [19, 7], [18, 6], [17, 5], [17, 4]]
-            left = [[6, 8], [7, 8], [8, 7], [9, 6], [10, 5], [10, 4]]
+            right = [ [20, 8], [20, 9], [19, 7], [18, 6], [17, 5], [17, 4], [21, 10], [22, 10], [23, 10]]
+            left = [ [7, 9], [7, 8], [8, 7], [9, 6], [10, 5], [10, 4], [4, 10], [5, 10], [6, 10]]
             game_state.attempt_upgrade(right + left)
 
     """--------------------PREDICTIVE PATHING--------------------"""
@@ -163,10 +164,10 @@ class AlgoStrategy(gamelib.AlgoCore):
 
     """------------------------------------------------ATTACK------------------------------------------------"""
 
-    def attack_walls(self, game_state):
-        left = [[21, 10], [20, 10], [19, 10], [18, 9]]
-        right = [[9, 9], [6, 10], [7, 10], [8, 10]]
-        game_state.attempt_remove(left + right)
+    # def attack_walls(self, game_state):
+    #     # left = [[21, 10], [20, 10], [19, 10], [18, 9]]
+    #     # right = [[9, 9], [6, 10], [7, 10], [8, 10]]
+    #     game_state.attempt_remove(left + right)
 
     def attack_focus(self, game_state):
         """
@@ -199,7 +200,7 @@ class AlgoStrategy(gamelib.AlgoCore):
             #     scout_spawn_location_options_bottom = [[13, 0]]
             #     game_state.attempt_spawn(SCOUT, scout_spawn_location_options_bottom, 50)
             # else:
-            wall_flex_loc = [[9, 9], [6, 10], [7, 10], [8, 10]]
+            wall_flex_loc = [[9, 9], [6, 10], [7, 10]]
             game_state.attempt_spawn(WALL, wall_flex_loc)
 
             demolisher_spawn_location_options_top = [[13, 0]]
@@ -235,8 +236,8 @@ class AlgoStrategy(gamelib.AlgoCore):
         left_demolisher_point = [[18, 11]]
         right_demolisher_point = [[9, 11]]
         # right and left coordinates of kamikaze structures
-        right = [[20, 8], [21, 8], [19, 7], [18, 6], [17, 5], [17, 4]]
-        left = [[6, 8], [7, 8], [8, 7], [9, 6], [10, 5], [10, 4]]
+        right = [[21, 7], [20, 8], [20, 9], [19, 7], [18, 6], [17, 5], [17, 4], [21, 10], [22, 10], [23, 10]]
+        left = [[6, 7], [7, 9], [7, 8], [8, 7], [9, 6], [10, 5], [10, 4], [6, 10], [5, 10], [4, 10]]
         game_state.attempt_spawn(WALL, right + left)
 
     def spawn_kamikaze(self, game_state, left=[[8,5]], right=[[19,5]], left_num=1, right_num=1):
@@ -374,9 +375,9 @@ class AlgoStrategy(gamelib.AlgoCore):
         self.handle_center_defence(game_state)
         if game_state.turn_number >= 5:
             self.spawn_kamikaze(game_state)
-        support_wall_loc = [[5, 12], [22, 12]]
+        support_wall_loc = [[5, 12], [6, 12], [7, 12], [8, 11], [9, 10], [22, 12], [21, 12], [20, 12], [18, 10], [19, 11]]
         game_state.attempt_spawn(WALL, support_wall_loc)
-        support_locations = [[10, 8], [11, 8], [16, 8], [17, 8], [23, 11], [22, 11], [5, 11], [4, 11]]
+        support_locations = [[10, 8], [11, 8], [16, 8], [17, 8], [21, 10], [22, 10], [4, 10], [5, 10]]
         game_state.attempt_spawn(SUPPORT, support_locations)
         game_state.attempt_upgrade(support_locations)
 
@@ -500,7 +501,7 @@ class AlgoStrategy(gamelib.AlgoCore):
                             left_side_units += 12
                         elif unit.unit_type == SUPPORT:
                             left_side_units += 1
-        
+
         return left_side_units, right_side_units
 
     def find_enemy_turrets(self, game_state, unit_type=None, valid_x=None, valid_y=None):
@@ -522,21 +523,23 @@ class AlgoStrategy(gamelib.AlgoCore):
                 filtered.append(location)
         return filtered
 
-    def count_attack (self, game_state):
+    def count_attack(self, game_state):
         scout_count = copy.copy(self.enemy_scout_spawn_locations)
         demolisher_count = copy.copy(self.enemy_demolisher_spawn_locations)
         # interceptor_count = copy.copy(self.enemy_interceptor_spawn_locations)
         self.turn_enemy_attack = [scout_count,
-                                      demolisher_count]
-        gamelib.debug_write("-------------------------------------------------------------------------------------------")
+                                  demolisher_count]
+        gamelib.debug_write(
+            "-------------------------------------------------------------------------------------------")
         gamelib.debug_write(self.turn_enemy_attack)
         gamelib.debug_write(self.turn_enemy_attack_pre)
         gamelib.debug_write(self.turn_enemy_attack_stats)
-        gamelib.debug_write("-------------------------------------------------------------------------------------------")
+        gamelib.debug_write(
+            "-------------------------------------------------------------------------------------------")
 
         if self.turn_enemy_attack_pre is None:
             self.turn_enemy_attack_pre = self.turn_enemy_attack
-            self.turn_enemy_attack_stats[game_state.turn_number-1] = 1
+            self.turn_enemy_attack_stats[game_state.turn_number - 1] = 1
         elif self.turn_enemy_attack_pre != self.turn_enemy_attack:
             self.turn_enemy_attack_pre = self.turn_enemy_attack
             self.turn_enemy_attack_stats[game_state.turn_number - 1] = 1
