@@ -83,100 +83,98 @@ class AlgoStrategy(gamelib.AlgoCore):
         # if game_state.turn_number < 5:
         #     self.stall_with_interceptors(game_state)
         # else:
-            # Now let's analyze the enemy base to see where their defenses are concentrated.
-            # If they have many units in the front we can build a line for our demolishers to attack them at long range.
-            # if self.detect_enemy_unit(game_state, unit_type=None, valid_x=None, valid_y=[14, 15]) > 10:
-            #     # self.demolisher_line_strategy(game_state)
-            # else:
-            # They don't have many units in the front so lets figure out their least defended area and send Scouts there.
+        # Now let's analyze the enemy base to see where their defenses are concentrated.
+        # If they have many units in the front we can build a line for our demolishers to attack them at long range.
+        # if self.detect_enemy_unit(game_state, unit_type=None, valid_x=None, valid_y=[14, 15]) > 10:
+        #     # self.demolisher_line_strategy(game_state)
+        # else:
+        # They don't have many units in the front so lets figure out their least defended area and send Scouts there.
 
-            # Only spawn Scouts every other turn
-            # Sending more at once is better since attacks can only hit a single scout at a time
-            # if game_state.turn_number % 2 == 1:
-            #     # To simplify we will just check sending them from back left and right
-            #     scout_spawn_location_options = [[13, 0], [14, 0]]
-            #     best_location = self.least_damage_spawn_location(game_state, scout_spawn_location_options)
-            #     game_state.attempt_spawn(SCOUT, best_location, 1000)
-
-        if game_state.turn_number % 7 == 0:
+        # Only spawn Scouts every other turn
+        # Sending more at once is better since attacks can only hit a single scout at a time
+        # if game_state.turn_number % 2 == 1:
+        #     # To simplify we will just check sending them from back left and right
+        #     scout_spawn_location_options = [[13, 0], [14, 0]]
+        #     best_location = self.least_damage_spawn_location(game_state, scout_spawn_location_options)
+        #     game_state.attempt_spawn(SCOUT, best_location, 1000)
+        if game_state.turn_number % 5 == 0:
+            self.attack_walls(game_state)
+        if game_state.turn_number % 6 == 0:
             # random number > 0.4 attack with scout only, otherwise combination of demolisher and scout
             self.attack_focus(game_state)
 
             # Lastly, if we have spare SP, let's build some supports
-        support_wall_loc = [[5, 12],[22, 12]]
-        game_state.attempt_spawn(WALL, support_wall_loc)
-        support_locations = [[10, 8], [11, 8], [16, 8], [17, 8],[23, 11], [22, 11], [5, 11], [4, 11]]
-        game_state.attempt_spawn(SUPPORT, support_locations)
-        game_state.attempt_upgrade(support_locations)
+
         if game_state.get_resource(SP, SELF) > 20:
             right = [[20, 8], [21, 8], [19, 7], [18, 6], [17, 5], [17, 4]]
             left = [[6, 8], [7, 8], [8, 7], [9, 6], [10, 5], [10, 4]]
-            game_state.attempt_upgrade(right+left)
+            game_state.attempt_upgrade(right + left)
 
     """------------------------------------------------ATTACK------------------------------------------------"""
-    def remove_attack_walls(self, game_state):
-        """
-        This function removes and build walls before attack
-        """
-        left_side_units, right_side_units = self.weaker_side(game_state, unit_type=None)
 
-        if right_side_units > left_side_units:
+    def attack_walls(self, game_state):
+        left = [[21, 10], [20, 10], [19, 10], [18, 9]]
+        right = [[9, 9], [6, 10], [7, 10], [8, 10]]
+        game_state.attempt_remove(left + right)
 
     def attack_focus(self, game_state):
         """
         This function focuses on attacking one side of the opponent board
         """
         left_side_units, right_side_units = self.weaker_side(game_state, unit_type=None)
-        #simple justificaiton of which side is weaker base on the number of units, should be replaced with more detailed enemy defence unit distribution estimation
-
+        # simple justificaiton of which side is weaker base on the number of units, should be replaced with more detailed enemy defence unit distribution estimation
         if right_side_units > left_side_units:
             # rnd = random.random()
             # if rnd > 0.4:
             #     scout_spawn_location_options_bottom = [[14, 0]]
             #     game_state.attempt_spawn(SCOUT, scout_spawn_location_options_bottom, 50)
             # else:
-            wall_flex_loc = [[21, 10], [20, 10], [19, 10],[18, 9], [22, 11], [23, 11], [24, 12]]
+            wall_flex_loc = [[21, 10], [20, 10], [19, 10], [18, 9]]
+            # , [22, 11], [23, 11], [24, 12]]
             game_state.attempt_spawn(WALL, wall_flex_loc)
 
             demolisher_spawn_location_options_top = [[14, 0]]
             game_state.attempt_spawn(DEMOLISHER, demolisher_spawn_location_options_top, 2)
 
-            scout_spawn_location_options_top = [[25,11]]
-            game_state.attempt_spawn(SCOUT, scout_spawn_location_options_top, 5)
+            scout_spawn_location_options_bottom_top = [[25, 11]]
+            game_state.attempt_spawn(SCOUT, scout_spawn_location_options_bottom_top, 3)
 
             scout_spawn_location_options_bottom = [[15, 1]]
             game_state.attempt_spawn(SCOUT, scout_spawn_location_options_bottom, 50)
 
-        elif left_side_units > right_side_units:
+        else:
             # rnd = random.random()
             # if rnd > 0.4:
             #     scout_spawn_location_options_bottom = [[13, 0]]
             #     game_state.attempt_spawn(SCOUT, scout_spawn_location_options_bottom, 50)
             # else:
+            wall_flex_loc = [[9, 9], [6, 10], [7, 10], [8, 10]]
+            game_state.attempt_spawn(WALL, wall_flex_loc)
 
             demolisher_spawn_location_options_top = [[13, 0]]
             game_state.attempt_spawn(DEMOLISHER, demolisher_spawn_location_options_top, 5)
 
-            scout_spawn_location_options_bottom_top = [[3,10]]
+            scout_spawn_location_options_bottom_top = [[3, 10]]
 
             scout_spawn_location_options_bottom = [[12, 1]]
             game_state.attempt_spawn(SCOUT, scout_spawn_location_options_bottom, 50)
 
-        else:
-            rnd2 = random.random()
-            if rnd2 >= 0.5:
-                demolisher_spawn_location_options_top = [[14, 0]]
-                game_state.attempt_spawn(DEMOLISHER, demolisher_spawn_location_options_top, 5)
+        # else:
+        #     rnd2 = random.random()
+        #     if rnd2 >= 0.5:
+        #         demolisher_spawn_location_options_top = [[14, 0]]
+        #         game_state.attempt_spawn(DEMOLISHER, demolisher_spawn_location_options_top, 5)
 
-                scout_spawn_location_options_bottom = [[15, 1]]
-                game_state.attempt_spawn(SCOUT, scout_spawn_location_options_bottom, 50)
+        #         scout_spawn_location_options_bottom = [[15, 1]]
+        #         game_state.attempt_spawn(SCOUT, scout_spawn_location_options_bottom, 50)
 
-            else:
-                demolisher_spawn_location_options_top = [[13, 0]]
-                game_state.attempt_spawn(DEMOLISHER, demolisher_spawn_location_options_top, 5)
+        #     else:
+        #         demolisher_spawn_location_options_top = [[13, 0]]
+        #         game_state.attempt_spawn(DEMOLISHER, demolisher_spawn_location_options_top, 5)
 
-                scout_spawn_location_options_bottom = [[12, 1]]
-                game_state.attempt_spawn(SCOUT, scout_spawn_location_options_bottom, 50)
+        #         scout_spawn_location_options_bottom = [[12, 1]]
+        #         game_state.attempt_spawn(SCOUT, scout_spawn_location_options_bottom, 50)
+
     """------------------------------------------------DEFENCE------------------------------------------------"""
 
     def build_kamikaze_defence(self, game_state):
@@ -274,13 +272,18 @@ class AlgoStrategy(gamelib.AlgoCore):
         """
         # Useful tool for setting up your base locations: https://www.kevinbai.design/terminal-map-maker
         # More community tools available at: https://terminal.c1games.com/rules#Download
-        if game_state.turn_number % 2 == 0:
-            self.build_kamikaze_defence(game_state)
+        self.build_kamikaze_defence(game_state)
         self.handle_corner_defence(game_state)
 
-        if (game_state.get_resource(SP, SELF) >= 6.5):
-            self.handle_center_defence(game_state)
-        self.spawn_kamikaze(game_state)
+        # if (game_state.get_resource(SP, SELF) >= 6.5):
+        self.handle_center_defence(game_state)
+        if game_state.turn_number >= 5:
+            self.spawn_kamikaze(game_state)
+        support_wall_loc = [[5, 12], [22, 12]]
+        game_state.attempt_spawn(WALL, support_wall_loc)
+        support_locations = [[10, 8], [11, 8], [16, 8], [17, 8], [23, 11], [22, 11], [5, 11], [4, 11]]
+        game_state.attempt_spawn(SUPPORT, support_locations)
+        game_state.attempt_upgrade(support_locations)
 
     # def build_reactive_defense(self, game_state):
     #     """
@@ -375,6 +378,7 @@ class AlgoStrategy(gamelib.AlgoCore):
             if not game_state.contains_stationary_unit(location):
                 filtered.append(location)
         return filtered
+
     def weaker_side(self, game_state, unit_type=None):
         left_side_units = 0
         left = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]

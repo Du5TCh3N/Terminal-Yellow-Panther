@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="9ae96329-b593-4709-819f-b4c5687f0e0e" name="Default Changelist" comment="" />
+    <list default="true" id="9ae96329-b593-4709-819f-b4c5687f0e0e" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/python-algo/algo_strategy.py" beforeDir="false" afterPath="$PROJECT_DIR$/python-algo/algo_strategy.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
