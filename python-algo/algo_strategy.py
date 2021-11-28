@@ -97,7 +97,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         If there are no stationary units to attack in the front, we will send Scouts to try and score quickly.
         """
         # First, place basic defenses
-        self.build_defences(game_state)
+        # self.build_defences(game_state)
 
         # Now build reactive defenses based on where the enemy scored
         # self.build_reactive_defense(game_state)
@@ -120,15 +120,15 @@ class AlgoStrategy(gamelib.AlgoCore):
         #     scout_spawn_location_options = [[13, 0], [14, 0]]
         #     best_location = self.least_damage_spawn_location(game_state, scout_spawn_location_options)
         #     game_state.attempt_spawn(SCOUT, best_location, 1000)
-        self.count_attack(game_state)
-        self.time_enemy_attack(game_state)
         # if game_state.turn_number % 5 == 0:
         #     self.attack_walls(game_state)
         # if game_state.turn_number % 2 == 0:
         #     # random number > 0.4 attack with scout only, otherwise combination of demolisher and scout
         #     self.attack_focus(game_state)
         # self.calculate_brute_force(game_state)
+
         if self.attack_flag == 2:
+            self.build_defences(game_state)
             if self.attack_strat == 1:
                 self.long_attack(game_state, self.attack_side)
             else:
@@ -140,6 +140,7 @@ class AlgoStrategy(gamelib.AlgoCore):
             self.attack_flag = 1
 
         if self.attack_flag == 1:
+            self.build_defences(game_state)
             rng = random.random()
             if rng >= 0.5:
                 self.attack_side = self.attack_prep_short(game_state)
@@ -148,6 +149,9 @@ class AlgoStrategy(gamelib.AlgoCore):
                 self.attack_side = self.attack_prep_long(game_state)
                 self.attack_strat = 1
             self.attack_flag = 2
+
+        if self.attack_flag == 0:
+            self.build_defences(game_state)
 
 
 
