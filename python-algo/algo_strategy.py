@@ -605,14 +605,17 @@ class AlgoStrategy(gamelib.AlgoCore):
                 # healthy state, build supports first. Build turrets when late game (more than 25 turns)
                 if (game_state.turn_number > 7 and game_state.my_health >= 15) or (game_state.turn_number >= 25):
                     support_locations = [[13, 3], [14, 3], [12, 4], [15, 4], [13, 4], [14, 4], [11, 5], [16, 5]]
-                    number_buildable = spendableSP // 2
+                    number_buildable = spendableSP // 4
                     i = 0
                     while number_buildable != 0 and i != len(support_locations):
                         if game_state.attempt_spawn(SUPPORT, support_locations[i]) == 1:
                             i += 1
                             number_buildable -= 1
                         else: 
+                            game_state.attempt_upgrade(support_locations[i])
                             i += 1
+                            number_buildable -= 1
+                    
 
                 # not healthy, build turrets first. Build turrets when late game (more than 25 turns)
                 if (game_state.turn_number > 7 and game_state.my_health >= 15) or (game_state.turn_number >= 25):
@@ -644,7 +647,9 @@ class AlgoStrategy(gamelib.AlgoCore):
                             i += 1
                             number_buildable -= 1
                         else:
+                            game_state.attempt_upgrade(build_turrets_locations[i])
                             i += 1
+                            number_buildable -= 1
 
                     spendableSP = spendableSP - (number_buildable * 6)
                     if spendableSP >= 1:
@@ -655,17 +660,26 @@ class AlgoStrategy(gamelib.AlgoCore):
                                 i += 1
                                 number_buildable -= 1
                             else:
+                                game_state.attempt_upgrade(build_walls_locations[i])
                                 i += 1
+                                number_buildable -= 1
                 # just build more defenses after round 25
                 if (game_state.turn_number >= 25):
                     number_buildable = spendableSP // 7
                     i = 0
                     build_turrets_locations = [[9, 7], [10, 7], [11, 7], [12, 7], [13, 7], [14, 7], [15, 7], [16, 7], [18, 7]]
                     if game_state.attempt_spawn(TURRET, build_turrets_locations[i]) == 1:
+                        wall_location = [build_turrets_locations[i][0], build_turrets_locations[i][1]+1]
+                        game_state.attempt_spawn(WALL, wall_location)
                         i += 1
                         number_buildable -= 1
                     else:
+                        wall_location = [build_turrets_locations[i][0], build_turrets_locations[i][1]+1]
+                        game_state.attempt_upgrade(build_turrets_locations[i])
+                        game_state.attempt_upgrade(wall_location)
                         i += 1
+                        number_buildable -= 1
+
 
 
     def build_defences(self, game_state):
