@@ -135,7 +135,8 @@ class AlgoStrategy(gamelib.AlgoCore):
                 self.short_attack(game_state, self.attack_side)
             self.attack_flag = 0
 
-        if game_state.get_resource(1, 0) >= 13:
+        if game_state.get_resource(MP, SELF) >= 13:
+            gamelib.debug_write("OUR MP IS CURRENTLY", game_state.get_resource(MP, SELF))
             self.attack_flag = 1
 
         if self.attack_flag == 1:
@@ -385,12 +386,13 @@ class AlgoStrategy(gamelib.AlgoCore):
 
     def __fast_kamikaze_defence(self, game_state, left=True, right=True):
         # 2 SP
-        leftWalls = [[2,12],[3,11]] if left else []
-        rightWalls = [[25,12],[24,11]] if right else []
+        leftWalls = [[2,12],[3,11]] if left else [[0,0]]
+        rightWalls = [[25,12],[24,11]] if right else [[0,0]]
         game_state.attempt_spawn(WALL, leftWalls + rightWalls)
+        game_state.attempt_remove(leftWalls + rightWalls)
         # 2 MP
-        leftSpawn = [[2,11]] if left else []
-        rightSpawn = [[25,11]] if right else []
+        leftSpawn = [[2,11]] if left else [[0,0]]
+        rightSpawn = [[25,11]] if right else [[0,0]]
         game_state.attempt_spawn(INTERCEPTOR, leftSpawn + rightSpawn)
 
     def __slow_kamikaze_defence(self, game_state, left=True, right=True, steps=9):
@@ -435,8 +437,10 @@ class AlgoStrategy(gamelib.AlgoCore):
                 IF we decide to take even number of steps we need 0.5 extra MP for each side. So we need 3 SP and 2MP for left and right defence in total
     """
     def spawn_kamikaze(self, game_state):
-        mpThreshold = self.enemy_mobile(game_state)
-        if game_state.get_resource(MP, SELF) >= mpThreshold and self.attack_flag != 2 and game_state.turn_number>=2:
+        mpThreshold = math.floor(self.enemy_mobile(game_state))
+        gamelib.debug_write("MP Threshold is", mpThreshold)
+        gamelib.debug_write("Attack flag", self.attack_flag)
+        if game_state.get_resource(MP, SELF) >= mpThreshold and self.attack_flag != 2 and game_state.turn_number>=2:        
             scouts = self.most_spawn_location(SCOUT)
             demos = self.most_spawn_location(DEMOLISHER)
             scouts_lr = self.kamikaze_ideal_steps(game_state, scouts)
