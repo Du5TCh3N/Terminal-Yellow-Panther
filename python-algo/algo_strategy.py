@@ -402,6 +402,28 @@ class AlgoStrategy(gamelib.AlgoCore):
         upgrades = [[4, 13], [23, 13], [6, 11], [21, 11], [24, 13], [3, 13], [6, 10], [21, 10], [1, 13], [0, 13], [27, 13], [26, 13]]
         game_state.attempt_upgrade(upgrades)
 
+    def extend_defense(self, game_state):
+        row_1_support_locations = [[11, 7], [12, 7], [13, 7], [14, 7], [15, 7], [16, 7]]
+        row_2_support_locations = [[11, 6], [12, 6], [13, 6], [14, 6], [15, 6], [16, 6]]
+        row_3_support_locations = [[11, 5], [12, 5], [13, 5], [14, 5], [15, 5], [16, 5]]
+        # If health is in a good position, build supports
+        if game_state.turn_number > 7 and game_state.my_health >= 15:
+            game_state.attempt_spawn(SUPPORT, row_1_support_locations)
+            game_state.attempt_upgrade(row_1_support_locations)
+            game_state.attempt_spawn(SUPPORT, row_2_support_locations)
+            game_state.attempt_upgrade(row_2_support_locations)
+            game_state.attempt_spawn(SUPPORT, row_3_support_locations)
+            game_state.attempt_upgrade(row_3_support_locations)
+        # If health is low, build more turrets to boost defense
+        elif game_state.turn_number > 7 and game_state.my_health <= 15:
+            # use self.scored_on_location to find where enemy attack is going through
+
+            for location in self.scored_on_locations:
+                if location == []
+            build_location = [location[0], location[1]+1]
+    #         game_state.attempt_spawn(TURRET, build_location)
+            # Build walls to protect weak areas
+
     def build_defences(self, game_state):
         """
         Build basic defenses using hardcoded locations.
@@ -413,6 +435,10 @@ class AlgoStrategy(gamelib.AlgoCore):
             self.initial_build(game_state)
 
         # All other turns
+        elif game_state.turn_number > 7:
+            self.rebuild(game_state)
+            self.extend_defense(game_state)
+
         else:
             self.rebuild(game_state)
 
