@@ -603,10 +603,10 @@ class AlgoStrategy(gamelib.AlgoCore):
                 spendableSP = game_state.get_resource(SP, SELF) - 10
                 # healthy state, build supports first. Build turrets when late game (more than 25 turns)
                 if (game_state.turn_number > 7 and game_state.my_health >= 15) or (game_state.turn_number >= 25):
-                    support_locations = [[13, 3], [14, 3], [12, 4], [15, 4], [13, 4], [14, 4], [11, 5], [17, 6]]
+                    support_locations = [[13, 3], [14, 3], [12, 4], [15, 4], [13, 4], [14, 4], [11, 5], [16, 5]]
                     number_buildable = spendableSP // 2
-                    while number_buildable != 0:
-                        i = 0
+                    i = 0
+                    while number_buildable != 0 and i != len(support_locations):
                         if game_state.attempt_spawn(SUPPORT, support_locations[i]) == 1:
                             i += 1
                             number_buildable -= 1
@@ -636,8 +636,9 @@ class AlgoStrategy(gamelib.AlgoCore):
                             build_walls_locations.append([location[0], location[1]+4])
                         
                     number_buildable = spendableSP // 6
-                    while number_buildable != 0:
-                        i = 0
+                    
+                    i = 0
+                    while number_buildable != 0 and i != len(build_turrets_locations):
                         if game_state.attempt_spawn(TURRET, build_turrets_locations[i]) == 1:
                             i += 1
                             number_buildable -= 1
@@ -647,8 +648,8 @@ class AlgoStrategy(gamelib.AlgoCore):
                     spendableSP = spendableSP - (number_buildable * 6)
                     if spendableSP >= 1:
                         number_buildable = spendableSP
-                        while number_buildable != 0:
-                            i = 0
+                        i = 0
+                        while number_buildable != 0 and i != len(build_walls_locations):
                             if game_state.attempt_spawn(WALL, build_walls_locations[i]) == 1:
                                 i += 1
                                 number_buildable -= 1
