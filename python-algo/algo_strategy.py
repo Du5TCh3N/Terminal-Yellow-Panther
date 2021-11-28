@@ -127,6 +127,9 @@ class AlgoStrategy(gamelib.AlgoCore):
         #     self.attack_focus(game_state)
         # self.calculate_brute_force(game_state)
 
+        if self.attack_flag == 0:
+            self.build_defences(game_state)
+
         if self.attack_flag == 2:
             self.build_defences(game_state)
             if self.attack_strat == 1:
@@ -150,8 +153,7 @@ class AlgoStrategy(gamelib.AlgoCore):
                 self.attack_strat = 1
             self.attack_flag = 2
 
-        if self.attack_flag == 0:
-            self.build_defences(game_state)
+        
 
 
 
@@ -571,8 +573,9 @@ class AlgoStrategy(gamelib.AlgoCore):
     def rebuild_tower_defenses(self, game_state):
         turret_locations = [[3, 12], [5, 10], [22, 10], [24, 12]]
         game_state.attempt_spawn(TURRET, turret_locations)
-        turret_defense_walls = [[2, 13], [3, 13], [4, 13], [6, 11], [6, 10], [21, 10], [21, 11], [23, 13], [24, 13],
-                                [25, 13]]
+        turret_defense_walls = [[2, 13], [3, 13], [4, 13], [6, 11], [6, 10], [21, 10], [21, 11], [23, 13], [24, 13],[25, 13]]
+        
+        gamelib.debug_write("REBUILDING, attack flag is", self.attack_flag)
         if self.attack_flag == 0:
             self.rebuild_low_health_defence(game_state,[[27, 13], [26, 13], [1, 13], [0, 13]],[],WALL,25)
         self.rebuild_low_health_defence(game_state, turret_defense_walls, [], unit_type=WALL, health_threshold=25)
