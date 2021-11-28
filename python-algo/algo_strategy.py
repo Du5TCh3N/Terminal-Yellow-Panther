@@ -160,41 +160,59 @@ class AlgoStrategy(gamelib.AlgoCore):
 
     """--------------------PREDICTIVE PATHING--------------------"""
 
-    def __in_kamikaze_range(self, enemy_location, suicide_location):
+    def __in_kamikaze_range(self, game_state, enemy_location, suicide_location):
         """
         `enemy_location`: list of len 2 representing coordinates of hypothetical enemy unit
         `suicide_location`: list of len2 representing coordinates of kamikaze suicide location
         """
-        deltaX = enemy_location[0] - suicide_location[0]
-        deltaY = enemy_location[1] - suicide_location[1]
-        return deltaX ** 2 + deltaY ** 2 <= 81
+        return game_state.game_map.distance_between_locations(enemy_location, suicide_location) <= 9
 
-    def __can_kill_kamikaze(self, enemy_location, enemy_range, kamikaze_location):
+    def __can_kill_kamikaze(self, game_state, enemy_location, enemy_range, kamikaze_location):
         """
         `enemy_location`: list of len 2 representing coordinates of hypothetical enemy unit
         `enemy_range`: range of enemy unit
         `suicide_location`: list of len2 representing coordinates of kamikaze suicide location
         """
-        deltaX = enemy_location[0] - kamikaze_location[0]
-        deltaY = enemy_location[1] - kamikaze_location[1]
-        return deltaX ** 2 + deltaY ** 2 <= enemy_range ** 2
+        return game_state.game_map.distance_between_locations(enemy_location, kamikaze_location) <= enemy_range 
 
-    def kamikaze_ideal_steps(self, game_state, starting_location, suicide_points=[[7, 8], [20, 8]]):
+    def kamikaze_ideal_steps(self, game_state, starting_location):
+        # Short
+        LshortSuicide = [2, 11]
+        RshortSuicide = [25, 11]
+        # Even and Odd Long
+        lSuicide = [5, 9] # {"even": [5, 9], "odd": [6,9]}
+        rSuicide = [22, 9] # {"even": [22, 9], "odd": [21,9]}
+
         if not starting_location:
-            return {"left": 5, "right": 5}
-        path = game_state.find_path_to_edge(starting_location)
+            return {"left": 7, "right": 7}
+        # Stores results for number of steps interceptor should take on both sides.
         idealSteps = {}
+        # Check if starting spawn point is in range of short attack
+        if self.__in_kamikaze_range(starting_location, LshortSuicide):
+            idealSteps["left"] = 1
+        if self.__in_kamikaze_range(starting_location, RshortSuicide):
+            idealSteps["right"] = 1
+        # If both are in then we can spawn immediately
+        if "left" in idealSteps and "right" in idealSteps:
+            return idealSteps
+
+        path = game_state.find_path_to_edge(starting_location)
+        
         for step, point in enumerate(path):
-            if "left" not in idealSteps and self.__in_kamikaze_range(point, suicide_points[0]):
-                idealSteps["left"] = (step + 1) // 4 + 1
-            if "right" not in idealSteps and self.__in_kamikaze_range(point, suicide_points[1]):
+            if "left" not in idealSteps and self.__in_kamikaze_range(point, lSuicide): 
+                idealSteps["left"] = step // 4 + 1
+                                
+            if "right" not in idealSteps and self.__in_kamikaze_range(point, rSuicide):
                 idealSteps["right"] = (step + 1) // 4 + 1
+
             if "left" in idealSteps and "right" in idealSteps:
-                break
+                return idealSteps
+
         if "left" not in idealSteps:
             idealSteps["left"] = 0
         if "right" not in idealSteps:
             idealSteps["right"] = 0
+
         return idealSteps
 
     """------------------------------------------------ATTACK------------------------------------------------"""
@@ -350,75 +368,153 @@ class AlgoStrategy(gamelib.AlgoCore):
                     game_state.attempt_spawn(DEMOLISHER, start_location, 1)
                     self.last_attack.append("POKE")
 
+<<<<<<< HEAD
     """------------------------------------------------DEFENCE------------------------------------------------"""
+=======
 
-    def build_kamikaze_defence(self, game_state):
-        right_explode_point = [[7, 7]]
-        left_explode_point = [[20, 7]]
-        # left and right coordinates of the point where demolishers are in range to kill interceptor at default explode point
-        left_demolisher_point = [[18, 11]]
-        right_demolisher_point = [[9, 11]]
-        # right and left coordinates of kamikaze structures
-        right = [[19, 7], [19, 8], [18, 6], [17, 5], [16, 4], [16, 3], [20, 9], [21, 9], [22, 9]]
 
-        left = [[7, 9], [9, 6], [10, 5], [11, 4], [11, 3], [5, 9], [6, 9], [8, 7], [8, 8]]
-        game_state.attempt_spawn(WALL, right + left)
+    """--------------------BUILD DEFENCE--------------------"""       
 
-    def spawn_kamikaze(self, game_state, left=[[8, 5]], right=[[19, 5]], left_num=1, right_num=1):
-        """
-        This function assumes that there are enough resources to spawn the amount given.
-        Shall be handled by external function.
-        """
-        scouts = self.most_spawn_location(SCOUT)
-        demos = self.most_spawn_location(DEMOLISHER)
+    """ KAMIKAZE STUFF """             
 
-        combined = left + right
-        scouts_lr = self.kamikaze_ideal_steps(game_state, scouts, [[7, 7], [20, 7]])
-        demos_lr = self.kamikaze_ideal_steps(game_state, demos, [[7, 7], [20, 7]])
+    def __fast_kamikaze_defence(self, game_state, left=True, right=True):
+        # 2 SP
+        leftWalls = [[2,12],[3,11]] if left else []
+        rightWalls = [[25,12],[24,11]] if right else []
+        game_state.attempt_spawn(WALL, leftWalls + rightWalls)
+        # 2 MP
+        leftSpawn = [[2,11]] if left else []
+        rightSpawn = [[25,11]] if right else []
+        game_state.attempt_spawn(INTERCEPTOR, leftSpawn + rightSpawn)
 
-        left_steps = max(scouts_lr["left"], demos_lr["left"])
-        right_steps = max(scouts_lr["left"], demos_lr["left"])
+    def __slow_kamikaze_defence(self, game_state, left=True, right=True, steps=9):
 
-        gamelib.debug_write("Left to take ", left_steps)
-        gamelib.debug_write("Right to take ", right_steps)
+        leftWalls = [[4, 9], [10, 4]] if left else []
+        rightWalls = [[23, 9], [17, 4]] if right else []
+        game_state.attempt_spawn(WALL, leftWalls + rightWalls)
 
-        while left_num > 0 or right_num > 0:
-            if left_num > 0:
-                if left_steps % 2 == 1:
-                    game_state.attempt_remove([[6, 8], [7, 8]])
-                    if left_steps == 5:
-                        game_state.attempt_spawn(INTERCEPTOR, left)
-                    elif left_steps > 5:
-                        game_state.attempt_spawn(INTERCEPTOR, [[9, 4]])
-                    else:
-                        game_state.attempt_spawn(INTERCEPTOR, [[7, 6]])
-                else:
-                    game_state.attempt_spawn(WALL, [[6, 8], [7, 8]])
-                    if left_steps == 4:
-                        game_state.attempt_spawn(INTERCEPTOR, left)
-                    elif left_steps > 4:
-                        game_state.attempt_spawn(INTERCEPTOR, [[9, 4]])
-                    else:
-                        game_state.attempt_spawn(INTERCEPTOR, [[7, 6]])
-                left_num -= 1
-            if right_num > 0:
-                if right_steps % 2 == 1:
-                    game_state.attempt_remove([[20, 8], [21, 8]])
-                    if right_steps == 5:
-                        game_state.attempt_spawn(INTERCEPTOR, right)
-                    elif right_steps > 5:
-                        game_state.attempt_spawn(INTERCEPTOR, [[18, 4]])
-                    else:
-                        game_state.attempt_spawn(INTERCEPTOR, [[20, 6]])
-                else:
-                    game_state.attempt_spawn(WALL, [[20, 8], [21, 8]])
-                    if right_steps == 4:
-                        game_state.attempt_spawn(INTERCEPTOR, right)
-                    elif right_steps > 4:
-                        game_state.attempt_spawn(INTERCEPTOR, [[18, 4]])
-                    else:
-                        game_state.attempt_spawn(INTERCEPTOR, [[20, 6]])
-                right_num -= 1
+        if steps >= 9:
+            leftSpawn = [[9,4]] if left else []
+            rightSpawn = [[18,4]] if left else []
+            game_state.attempt_spawn(INTERCEPTOR, leftSpawn + rightSpawn)
+        elif steps >=7:
+            leftSpawn = [[8,5]] if left else []
+            rightSpawn = [[19,5]] if left else []
+            game_state.attempt_spawn(INTERCEPTOR, leftSpawn + rightSpawn)
+        elif steps >=5:
+            leftSpawn = [[7,6]] if left else []
+            rightSpawn = [[20,6]] if left else []
+            game_state.attempt_spawn(INTERCEPTOR, leftSpawn + rightSpawn)
+        elif steps >= 3:
+            leftSpawn = [[6,7]] if left else []
+            rightSpawn = [[21,7]] if left else []
+            game_state.attempt_spawn(INTERCEPTOR, leftSpawn + rightSpawn)
+
+        extraLeft = [[6,9]] if left else []
+        extraRight = [[21,9]] if right else []
+
+        if steps % 2 == 0:
+            game_state.attempt_spawn(WALL, extraLeft + extraRight)
+        else:
+            game_state.attempt_remove(WALL, extraLeft + extraRight)
+>>>>>>> priorityUpgrade
+
+    
+    """ 
+    If we are choosing to defend we need:
+        LONG DEFENCE:
+            DEFAULT: (Interceptor takes 9 steps to detonate)
+                1 SP + 1 MP for each side
+                So left + right defence we need 2 SP and 2 MP
+            EVEN NUMBER OF STEPS:
+                IF we decide to take even number of steps we need 0.5 extra MP for each side. So we need 3 SP and 2MP for left and right defence in total
+    """
+    def spawn_kamikaze(self, game_state):
+        mpThreshold = self.enemy_mobile(game_state)
+        if game_state.get_resource(MP, SELF) >= mpThreshold: # and self.attack_flag == 0:
+            scouts = self.most_spawn_location(SCOUT)
+            demos = self.most_spawn_location(DEMOLISHER)
+            scouts_lr = self.kamikaze_ideal_steps(game_state, scouts)
+            demos_lr = self.kamikaze_ideal_steps(game_state, demos)
+
+            # Need 2SP and 2MP
+            if scouts_lr["left"] == 1 or demos_lr["left"] == 1:
+                self.__fast_kamikaze_defence(game_state, True, False)
+            if scouts_lr["right"] == 1 or demos_lr["right"] == 1:
+                self.__fast_kamikaze_defence(game_state, False, True)
+                        
+            if scouts_lr["left"] > 1 and demos_lr["left"] > 1:
+                self.__slow_kamikaze_defence(game_state, True, False, demos_lr["left"])
+            elif scouts_lr["left"] > 1:
+                self.__slow_kamikaze_defence(game_state, True, False, scouts_lr["left"])
+            elif demos_lr["left"] > 1:
+                self.__slow_kamikaze_defence(game_state, True, False, demos_lr["left"])
+                
+            if scouts_lr["right"] > 1 and demos_lr["right"] > 1:
+                self.__slow_kamikaze_defence(game_state, False, True, demos_lr["right"])
+            elif scouts_lr["left"] > 1:
+                self.__slow_kamikaze_defence(game_state, False, True, scouts_lr["right"])
+            elif demos_lr["left"] > 1:
+                self.__slow_kamikaze_defence(game_state, False, True, demos_lr["right"])
+
+
+    # def spawn_kamikaze(self, game_state, left=[[8, 5]], right=[[19, 5]], left_num=1, right_num=1):
+    #     """
+    #     This function assumes that there are enough resources to spawn the amount given.
+    #     Shall be handled by external function.
+    #     """
+    #     scouts = self.most_spawn_location(SCOUT)
+    #     demos = self.most_spawn_location(DEMOLISHER)
+
+    #     combined = left + right
+    #     # scouts_lr = self.kamikaze_ideal_steps(game_state, scouts, [[7, 7], [20, 7]])
+    #     # demos_lr = self.kamikaze_ideal_steps(game_state, demos, [[7, 7], [20, 7]])
+
+    #     left_steps = max(scouts_lr["left"], demos_lr["left"])
+    #     right_steps = max(scouts_lr["left"], demos_lr["left"])
+
+    #     gamelib.debug_write("Left to take ", left_steps)
+    #     gamelib.debug_write("Right to take ", right_steps)
+
+    #     while left_num > 0 or right_num > 0:
+    #         if left_num > 0:
+    #             if left_steps % 2 == 1:
+    #                 game_state.attempt_remove([[6, 8], [7, 8]])
+    #                 if left_steps == 5:
+    #                     game_state.attempt_spawn(INTERCEPTOR, left)
+    #                 elif left_steps > 5:
+    #                     game_state.attempt_spawn(INTERCEPTOR, [[9, 4]])
+    #                 else:
+    #                     game_state.attempt_spawn(INTERCEPTOR, [[7, 6]])
+    #             else:
+    #                 game_state.attempt_spawn(WALL, [[6, 8], [7, 8]])
+    #                 if left_steps == 4:
+    #                     game_state.attempt_spawn(INTERCEPTOR, left)
+    #                 elif left_steps > 4:
+    #                     game_state.attempt_spawn(INTERCEPTOR, [[9, 4]])
+    #                 else:
+    #                     game_state.attempt_spawn(INTERCEPTOR, [[7, 6]])
+    #             left_num -= 1
+    #         if right_num > 0:
+    #             if right_steps % 2 == 1:
+    #                 game_state.attempt_remove([[20, 8], [21, 8]])
+    #                 if right_steps == 5:
+    #                     game_state.attempt_spawn(INTERCEPTOR, right)
+    #                 elif right_steps > 5:
+    #                     game_state.attempt_spawn(INTERCEPTOR, [[18, 4]])
+    #                 else:
+    #                     game_state.attempt_spawn(INTERCEPTOR, [[20, 6]])
+    #             else:
+    #                 game_state.attempt_spawn(WALL, [[20, 8], [21, 8]])
+    #                 if right_steps == 4:
+    #                     game_state.attempt_spawn(INTERCEPTOR, right)
+    #                 elif right_steps > 4:
+    #                     game_state.attempt_spawn(INTERCEPTOR, [[18, 4]])
+    #                 else:
+    #                     game_state.attempt_spawn(INTERCEPTOR, [[20, 6]])
+    #             right_num -= 1
+
+    """ Others """
 
     def rebuild_low_health_defence(self, game_state, locations, exceptions=[], unit_type=None, health_threshold=65):
         """
