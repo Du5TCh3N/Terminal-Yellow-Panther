@@ -245,7 +245,7 @@ class AlgoStrategy(gamelib.AlgoCore):
             scout_spawn_location_options_top = [[25, 11]]
             game_state.attempt_spawn(SCOUT, scout_spawn_location_options_top, 5)
 
-            scout_spawn_location_options_bottom = [[15, 1]]
+            scout_spawn_location_options_bottom = [[16, 2]]
             game_state.attempt_spawn(SCOUT, scout_spawn_location_options_bottom, 50)
 
         else:
@@ -260,7 +260,7 @@ class AlgoStrategy(gamelib.AlgoCore):
             demolisher_spawn_location_options_bottom = [[13, 0]]
             game_state.attempt_spawn(DEMOLISHER, demolisher_spawn_location_options_bottom, 5)
 
-            scout_spawn_location_options_bottom = [[12, 1]]
+            scout_spawn_location_options_bottom = [[11, 2]]
             game_state.attempt_spawn(SCOUT, scout_spawn_location_options_bottom, 5)
 
             scout_spawn_location_options_top = [[3, 10]]
