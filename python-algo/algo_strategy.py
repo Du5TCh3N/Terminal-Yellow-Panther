@@ -120,8 +120,8 @@ class AlgoStrategy(gamelib.AlgoCore):
             self.attack_focus(game_state)
 
             # Lastly, if we have spare SP, let's build some supports and corner walls
-        corner_reinforcement_loc = [[1, 12], [2, 12], [25, 12], [26, 12]]
-        game_state.attempt_spawn(WALL, corner_reinforcement_loc)
+        # corner_reinforcement_loc = [[1, 12], [2, 12], [25, 12], [26, 12]]
+        # game_state.attempt_spawn(WALL, corner_reinforcement_loc)
         if game_state.get_resource(SP, SELF) > 20:
             right = [[20, 8], [20, 9], [19, 7], [18, 6], [17, 5], [17, 4], [21, 10], [22, 10], [23, 10]]
             left = [[7, 9], [7, 8], [8, 7], [9, 6], [10, 5], [10, 4], [4, 10], [5, 10], [6, 10]]
@@ -396,33 +396,32 @@ class AlgoStrategy(gamelib.AlgoCore):
         game_state.attempt_upgrade(left_helper_walls)
 
     def turn1_defense(self, game_state):
-        # SP: 5 (Walls) + 12 (Turrets) = 17
-
         # Place turrets that attack enemy units
-        turret_locations = [[3, 12], [24, 12]]
+        turret_locations = [[7, 11], [20, 11]]
         # attempt_spawn will try to spawn units if we have resources, and will check if a blocking unit is already there
         game_state.attempt_spawn(TURRET, turret_locations)
         # Place walls in front of turrets to soak up damage for them
-        right_wall_locations = [[23, 12], [24, 13], [25, 13], [26, 13], [27, 13]]
-        left_wall_locations = [[4, 12], [3, 13], [2, 13], [1, 13], [0, 13]]
-        wall_locations = left_wall_locations + right_wall_locations
+        right_first_row_walls = [[24, 13], [25, 13], [26, 13], [27, 13]]
+        right_second_row_walls = [[20, 12], [21, 12], [22, 12], [23, 12]]
+        right_diagonal_walls = [[19, 11], [16, 10], [18, 10]]
+        left_first_row_walls = [[3, 13], [2, 13], [1, 13], [0, 13]]
+        left_second_row_walls = [[7, 12], [6, 12], [5, 12], [4, 12]]
+        left_diagonal_walls = [[8, 11], [9, 10], [11, 10]]
+        wall_locations = right_first_row_walls + right_second_row_walls + right_diagonal_walls + left_first_row_walls + left_second_row_walls + left_diagonal_walls
         game_state.attempt_spawn(WALL, wall_locations)
 
-        front_line_walls = [[5, 12], [6, 12], [7, 12], [8, 11], [9, 10], [18, 10], [19, 11], [20, 12], [21, 12],
-                            [22, 12]]
-        game_state.attempt_spawn(WALL, front_line_walls)
+        interceptor_line_walls = [[4, 10], [5, 10], [22, 10], [23, 10], [6, 9], [21, 9], [7, 8], [20, 8], [8, 7], [19, 7], [8, 6], [19, 6]]
+        game_state.attempt_spawn(WALL, interceptor_line_walls)
 
-        # SP: 12 (Turrets) + 1 (Key Wall) = 13
-        # Walls
-        left_key_wall = [[11, 10], [10, 9], [12, 9]]
-        right_key_wall = [[16, 10], [15, 9], [17, 9]]
-        # Turrets
-        left_turret = [[11, 9]]
-        right_turret = [[16, 9]]
-        game_state.attempt_spawn(TURRET, right_turret)
-        game_state.attempt_spawn(TURRET, left_turret)
-        game_state.attempt_spawn(WALL, right_key_wall)
-        game_state.attempt_spawn(WALL, left_key_wall)
+        game_state.attempt_upgrade(left_second_row_walls)
+        game_state.attempt_upgrade(right_second_row_walls)
+        game_state.attempt_upgrade(left_diagonal_walls)
+        game_state.attempt_upgrade(right_diagonal_walls)
+        game_state.attempt_upgrade(left_first_row_walls)
+        game_state.attempt_upgrade(right_first_row_walls)
+
+        interceptor_spawn = [[20, 6], [7, 6]]
+        game_state.attempt_spawn(INTERCEPTOR, interceptor_spawn)
 
     def turn2_defense(self, game_state):
         left_key_wall = [[11, 10], [10, 9], [12, 9]]
