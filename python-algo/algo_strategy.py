@@ -428,8 +428,8 @@ class AlgoStrategy(gamelib.AlgoCore):
                 IF we decide to take even number of steps we need 0.5 extra MP for each side. So we need 3 SP and 2MP for left and right defence in total
     """
     def spawn_kamikaze(self, game_state):
-        mpThreshold = self.enemy_mobile(game_state)
-        gamelib.debug_write("MP Threshold is: ", mpThreshold)
+        mpThreshold = math.floor(self.enemy_mobile(game_state))
+        gamelib.debug_write("MP Threshold is", mpThreshold)
         if game_state.get_resource(MP, SELF) >= mpThreshold and self.attack_flag != 2:
             scouts = self.most_spawn_location(SCOUT)
             demos = self.most_spawn_location(DEMOLISHER)
