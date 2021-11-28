@@ -188,9 +188,9 @@ class AlgoStrategy(gamelib.AlgoCore):
         # Stores results for number of steps interceptor should take on both sides.
         idealSteps = {}
         # Check if starting spawn point is in range of short attack
-        if self.__in_kamikaze_range(starting_location, LshortSuicide):
+        if self.__in_kamikaze_range(game_state, starting_location, LshortSuicide):
             idealSteps["left"] = 1
-        if self.__in_kamikaze_range(starting_location, RshortSuicide):
+        if self.__in_kamikaze_range(game_state, starting_location, RshortSuicide):
             idealSteps["right"] = 1
         # If both are in then we can spawn immediately
         if "left" in idealSteps and "right" in idealSteps:
@@ -199,10 +199,10 @@ class AlgoStrategy(gamelib.AlgoCore):
         path = game_state.find_path_to_edge(starting_location)
         
         for step, point in enumerate(path):
-            if "left" not in idealSteps and self.__in_kamikaze_range(point, lSuicide): 
+            if "left" not in idealSteps and self.__in_kamikaze_range(game_state, point, lSuicide): 
                 idealSteps["left"] = step // 4 + 1
                                 
-            if "right" not in idealSteps and self.__in_kamikaze_range(point, rSuicide):
+            if "right" not in idealSteps and self.__in_kamikaze_range(game_state,point, rSuicide):
                 idealSteps["right"] = (step + 1) // 4 + 1
 
             if "left" in idealSteps and "right" in idealSteps:
@@ -387,34 +387,34 @@ class AlgoStrategy(gamelib.AlgoCore):
 
     def __slow_kamikaze_defence(self, game_state, left=True, right=True, steps=9):
 
-        leftWalls = [[4, 9], [10, 4]] if left else []
-        rightWalls = [[23, 9], [17, 4]] if right else []
+        leftWalls = [[4, 9], [10, 4]] if left else [[0,0]]
+        rightWalls = [[23, 9], [17, 4]] if right else [[0,0]]
         game_state.attempt_spawn(WALL, leftWalls + rightWalls)
 
         if steps >= 9:
-            leftSpawn = [[9,4]] if left else []
-            rightSpawn = [[18,4]] if left else []
+            leftSpawn = [[9,4]] if left else [[0,0]]
+            rightSpawn = [[18,4]] if left else [[0,0]]
             game_state.attempt_spawn(INTERCEPTOR, leftSpawn + rightSpawn)
         elif steps >=7:
-            leftSpawn = [[8,5]] if left else []
-            rightSpawn = [[19,5]] if left else []
+            leftSpawn = [[8,5]] if left else [[0,0]]
+            rightSpawn = [[19,5]] if left else [[0,0]]
             game_state.attempt_spawn(INTERCEPTOR, leftSpawn + rightSpawn)
         elif steps >=5:
-            leftSpawn = [[7,6]] if left else []
-            rightSpawn = [[20,6]] if left else []
+            leftSpawn = [[7,6]] if left else [[0,0]]
+            rightSpawn = [[20,6]] if left else [[0,0]]
             game_state.attempt_spawn(INTERCEPTOR, leftSpawn + rightSpawn)
         elif steps >= 3:
-            leftSpawn = [[6,7]] if left else []
-            rightSpawn = [[21,7]] if left else []
+            leftSpawn = [[6,7]] if left else [[0,0]]
+            rightSpawn = [[21,7]] if left else [[0,0]]
             game_state.attempt_spawn(INTERCEPTOR, leftSpawn + rightSpawn)
 
-        extraLeft = [[6,9]] if left else []
-        extraRight = [[21,9]] if right else []
+        extraLeft = [[6,9]] if left else [[0,0]]
+        extraRight = [[21,9]] if right else [[0,0]]
 
         if steps % 2 == 0:
             game_state.attempt_spawn(WALL, extraLeft + extraRight)
         else:
-            game_state.attempt_remove(WALL, extraLeft + extraRight)
+            game_state.attempt_remove(extraLeft + extraRight)
 
     
     """ 
