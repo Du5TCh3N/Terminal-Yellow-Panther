@@ -129,8 +129,9 @@ class AlgoStrategy(gamelib.AlgoCore):
 
         if self.attack_flag == 0:
             self.build_defences(game_state)
+            self.__remove_attack_walls(game_state)
 
-        if self.attack_flag == 2:
+        elif self.attack_flag == 2:
             self.build_defences(game_state)
             if self.attack_strat == 1:
                 self.long_attack(game_state, self.attack_side)
@@ -139,10 +140,7 @@ class AlgoStrategy(gamelib.AlgoCore):
             self.attack_flag = 0
 
         if game_state.get_resource(MP, SELF) >= 13:
-            gamelib.debug_write("OUR MP IS CURRENTLY", game_state.get_resource(MP, SELF))
             self.attack_flag = 1
-
-        if self.attack_flag == 1:
             self.build_defences(game_state)
             rng = random.random()
             if rng >= 0.5:
@@ -166,7 +164,7 @@ class AlgoStrategy(gamelib.AlgoCore):
             game_state.attempt_upgrade(right + left)
 
     """--------------------PREDICTIVE PATHING--------------------"""
-
+    
     def __in_kamikaze_range(self, game_state, enemy_location, suicide_location):
         """
         `enemy_location`: list of len 2 representing coordinates of hypothetical enemy unit
@@ -228,6 +226,9 @@ class AlgoStrategy(gamelib.AlgoCore):
     #     # left = [[21, 10], [20, 10], [19, 10], [18, 9]]
     #     # right = [[9, 9], [6, 10], [7, 10], [8, 10]]
     #     game_state.attempt_remove(left + right)
+
+    def __remove_attack_walls(self, game_state):
+        game_state.attempt_remove([[22,12],[5,12]])
 
     def attack_focus(self, game_state):
         """
