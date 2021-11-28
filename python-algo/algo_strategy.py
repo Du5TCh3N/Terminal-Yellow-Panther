@@ -377,12 +377,13 @@ class AlgoStrategy(gamelib.AlgoCore):
 
     def __fast_kamikaze_defence(self, game_state, left=True, right=True):
         # 2 SP
-        leftWalls = [[2,12],[3,11]] if left else []
-        rightWalls = [[25,12],[24,11]] if right else []
+        leftWalls = [[2,12],[3,11]] if left else [[0,0]]
+        rightWalls = [[25,12],[24,11]] if right else [[0,0]]
         game_state.attempt_spawn(WALL, leftWalls + rightWalls)
+        game_state.attempt_remove(leftWalls + rightWalls)
         # 2 MP
-        leftSpawn = [[2,11]] if left else []
-        rightSpawn = [[25,11]] if right else []
+        leftSpawn = [[2,11]] if left else [[0,0]]
+        rightSpawn = [[25,11]] if right else [[0,0]]
         game_state.attempt_spawn(INTERCEPTOR, leftSpawn + rightSpawn)
 
     def __slow_kamikaze_defence(self, game_state, left=True, right=True, steps=9):
