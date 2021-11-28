@@ -61,6 +61,8 @@ class AlgoStrategy(gamelib.AlgoCore):
         self.enemy_mobile_points = []
 
         self.last_attack = ["NONE"]
+        self.short_success = 1
+        self.long_success = 1
         self.attack_flag = 0
         # attack_flag: 0 no attack, 1 prep attack, 2 attacked finished
         self.attack_side = 0
@@ -145,7 +147,10 @@ class AlgoStrategy(gamelib.AlgoCore):
         else:
             self.build_defences(game_state)
             rng = random.random()
-            if rng >= 0.5:
+
+            ratio = self.long_success / self.short_success + self.long_success
+
+            if rng >= ratio:
                 self.attack_side = self.attack_prep_short(game_state)
                 self.attack_strat = 0
             else:
@@ -963,16 +968,17 @@ class AlgoStrategy(gamelib.AlgoCore):
         # Let's record at what position we get scored on
         state = json.loads(turn_string)
         events = state["events"]
-        # breaches = events["breach"]
-        # for breach in breaches:
-        #     location = breach[0]
-        #     unit_owner_self = True if breach[4] == 1 else False
-        #     # When parsing the frame data directly, 
-        #     # 1 is integer for yourself, 2 is opponent (StarterKit code uses 0, 1 as player_index instead)
-        #     if not unit_owner_self:
-        #         gamelib.debug_write("Got scored on at: {}".format(location))
-        #         self.scored_on_locations.append(location)
-        #         gamelib.debug_write("All locations: {}".format(self.scored_on_locations))
+        breaches = events["breach"]
+        for breach in breaches:
+            location = breach[0]
+            unit_owner_self = True if breach[4] == 1 else False
+            # When parsing the frame data directly, 
+            # 1 is integer for yourself, 2 is opponent (StarterKit code uses 0, 1 as player_index instead)
+            if unit_owner_self:
+                if self.attack_strat == 0:
+                    self.short_success += 1
+                else:
+                    self.long_success += 1
         spawns = events["spawn"]
         for spawn in spawns:
             location = tuple(spawn[0])
