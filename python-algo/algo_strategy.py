@@ -57,6 +57,8 @@ class AlgoStrategy(gamelib.AlgoCore):
         self.enemy_interceptor_spawn_locations = {}
         self.kamikaze_ready = False
 
+        self.enemy_mobile_points = []
+
     def on_turn(self, turn_state):
         """
         This function is called every turn with the game state wrapper as
@@ -87,6 +89,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         """
         # First, place basic defenses
         self.build_defences(game_state)
+
         # Now build reactive defenses based on where the enemy scored
         # self.build_reactive_defense(game_state)
 
@@ -109,18 +112,20 @@ class AlgoStrategy(gamelib.AlgoCore):
         #     best_location = self.least_damage_spawn_location(game_state, scout_spawn_location_options)
         #     game_state.attempt_spawn(SCOUT, best_location, 1000)
         self.count_attack(game_state)
+        self.time_enemy_attack(game_state)
         # if game_state.turn_number % 5 == 0:
         #     self.attack_walls(game_state)
         if game_state.turn_number % 6 == 0:
             # random number > 0.4 attack with scout only, otherwise combination of demolisher and scout
             self.attack_focus(game_state)
 
-            # Lastly, if we have spare SP, let's build some supports
-
+            # Lastly, if we have spare SP, let's build some supports and corner walls
+        corner_reinforcement_loc = [[1, 12], [2, 12], [25, 12], [26, 12]]
+        game_state.attempt_spawn(WALL, corner_reinforcement_loc)
         if game_state.get_resource(SP, SELF) > 20:
-            right = [ [20, 8], [20, 9], [19, 7], [18, 6], [17, 5], [17, 4], [21, 10], [22, 10], [23, 10]]
-            left = [ [7, 9], [7, 8], [8, 7], [9, 6], [10, 5], [10, 4], [4, 10], [5, 10], [6, 10]]
-            # game_state.attempt_upgrade(right + left)
+            right = [[20, 8], [20, 9], [19, 7], [18, 6], [17, 5], [17, 4], [21, 10], [22, 10], [23, 10]]
+            left = [[7, 9], [7, 8], [8, 7], [9, 6], [10, 5], [10, 4], [4, 10], [5, 10], [6, 10]]
+            game_state.attempt_upgrade(right + left)
 
     """--------------------PREDICTIVE PATHING--------------------"""
 
@@ -161,8 +166,6 @@ class AlgoStrategy(gamelib.AlgoCore):
             idealSteps["right"] = 0
         return idealSteps
 
-    
-
     """------------------------------------------------ATTACK------------------------------------------------"""
 
     # def attack_walls(self, game_state):
@@ -182,15 +185,15 @@ class AlgoStrategy(gamelib.AlgoCore):
             #     scout_spawn_location_options_bottom = [[14, 0]]
             #     game_state.attempt_spawn(SCOUT, scout_spawn_location_options_bottom, 50)
             # else:
-            wall_flex_loc = [[21, 10], [20, 10], [19, 10], [18, 9]]
+            # wall_flex_loc = [[21, 10], [20, 10], [19, 10], [18, 9]]
             # , [22, 11], [23, 11], [24, 12]]
-            game_state.attempt_spawn(WALL, wall_flex_loc)
+            # game_state.attempt_spawn(WALL, wall_flex_loc)
 
             demolisher_spawn_location_options_top = [[14, 0]]
-            game_state.attempt_spawn(DEMOLISHER, demolisher_spawn_location_options_top, 2)
+            game_state.attempt_spawn(DEMOLISHER, demolisher_spawn_location_options_top, 5)
 
-            scout_spawn_location_options_bottom_top = [[25, 11]]
-            game_state.attempt_spawn(SCOUT, scout_spawn_location_options_bottom_top, 3)
+            scout_spawn_location_options_top = [[25, 11]]
+            game_state.attempt_spawn(SCOUT, scout_spawn_location_options_top, 5)
 
             scout_spawn_location_options_bottom = [[15, 1]]
             game_state.attempt_spawn(SCOUT, scout_spawn_location_options_bottom, 50)
@@ -201,16 +204,17 @@ class AlgoStrategy(gamelib.AlgoCore):
             #     scout_spawn_location_options_bottom = [[13, 0]]
             #     game_state.attempt_spawn(SCOUT, scout_spawn_location_options_bottom, 50)
             # else:
-            wall_flex_loc = [ [6, 10], [7, 10]]
-            game_state.attempt_spawn(WALL, wall_flex_loc)
+            # wall_flex_loc = [ [6, 10], [7, 10]]
+            # game_state.attempt_spawn(WALL, wall_flex_loc)
 
-            demolisher_spawn_location_options_top = [[13, 0]]
-            game_state.attempt_spawn(DEMOLISHER, demolisher_spawn_location_options_top, 5)
-
-            scout_spawn_location_options_bottom_top = [[3, 10]]
+            demolisher_spawn_location_options_bottom = [[13, 0]]
+            game_state.attempt_spawn(DEMOLISHER, demolisher_spawn_location_options_bottom, 5)
 
             scout_spawn_location_options_bottom = [[12, 1]]
-            game_state.attempt_spawn(SCOUT, scout_spawn_location_options_bottom, 50)
+            game_state.attempt_spawn(SCOUT, scout_spawn_location_options_bottom, 5)
+
+            scout_spawn_location_options_top = [[3, 10]]
+            game_state.attempt_spawn(SCOUT, scout_spawn_location_options_top, 50)
 
         # else:
         #     rnd2 = random.random()
@@ -238,10 +242,11 @@ class AlgoStrategy(gamelib.AlgoCore):
         right_demolisher_point = [[9, 11]]
         # right and left coordinates of kamikaze structures
         right = [[19, 7], [19, 8], [18, 6], [17, 5], [16, 4], [16, 3], [20, 9], [21, 9], [22, 9]]
-        left = [[7, 9],  [9, 6], [10, 5], [11, 4], [11, 3], [5, 9], [6, 9], [8, 7], [8, 8]]
+
+        left = [[7, 9], [9, 6], [10, 5], [11, 4], [11, 3], [5, 9], [6, 9], [8, 7], [8, 8]]
         game_state.attempt_spawn(WALL, right + left)
 
-    def spawn_kamikaze(self, game_state, left=[[8,5]], right=[[19,5]], left_num=1, right_num=1):
+    def spawn_kamikaze(self, game_state, left=[[8, 5]], right=[[19, 5]], left_num=1, right_num=1):
         """
         This function assumes that there are enough resources to spawn the amount given.
         Shall be handled by external function.
@@ -250,11 +255,10 @@ class AlgoStrategy(gamelib.AlgoCore):
         demos = self.most_spawn_location(DEMOLISHER)
 
         combined = left + right
-        scouts_lr = self.kamikaze_ideal_steps(game_state, scouts, [[7,7],[20,7]])
-        demos_lr = self.kamikaze_ideal_steps(game_state, demos, [[7,7],[20,7]]) 
-        
+        scouts_lr = self.kamikaze_ideal_steps(game_state, scouts, [[7, 7], [20, 7]])
+        demos_lr = self.kamikaze_ideal_steps(game_state, demos, [[7, 7], [20, 7]])
 
-        left_steps  = max(scouts_lr["left"], demos_lr["left"])
+        left_steps = max(scouts_lr["left"], demos_lr["left"])
         right_steps = max(scouts_lr["left"], demos_lr["left"])
 
         gamelib.debug_write("Left to take ", left_steps)
@@ -263,39 +267,39 @@ class AlgoStrategy(gamelib.AlgoCore):
         while left_num > 0 or right_num > 0:
             if left_num > 0:
                 if left_steps % 2 == 1:
-                    game_state.attempt_remove([[6,8],[7,8]])
+                    game_state.attempt_remove([[6, 8], [7, 8]])
                     if left_steps == 5:
                         game_state.attempt_spawn(INTERCEPTOR, left)
                     elif left_steps > 5:
-                        game_state.attempt_spawn(INTERCEPTOR, [[9,4]])
+                        game_state.attempt_spawn(INTERCEPTOR, [[9, 4]])
                     else:
-                        game_state.attempt_spawn(INTERCEPTOR, [[7,6]])
+                        game_state.attempt_spawn(INTERCEPTOR, [[7, 6]])
                 else:
-                    game_state.attempt_spawn(WALL,[[6,8],[7,8]])
+                    game_state.attempt_spawn(WALL, [[6, 8], [7, 8]])
                     if left_steps == 4:
                         game_state.attempt_spawn(INTERCEPTOR, left)
                     elif left_steps > 4:
-                        game_state.attempt_spawn(INTERCEPTOR, [[9,4]])
+                        game_state.attempt_spawn(INTERCEPTOR, [[9, 4]])
                     else:
-                        game_state.attempt_spawn(INTERCEPTOR, [[7,6]])
+                        game_state.attempt_spawn(INTERCEPTOR, [[7, 6]])
                 left_num -= 1
             if right_num > 0:
                 if right_steps % 2 == 1:
-                    game_state.attempt_remove([[20,8],[21,8]])
+                    game_state.attempt_remove([[20, 8], [21, 8]])
                     if right_steps == 5:
                         game_state.attempt_spawn(INTERCEPTOR, right)
                     elif right_steps > 5:
-                        game_state.attempt_spawn(INTERCEPTOR, [[18,4]])
+                        game_state.attempt_spawn(INTERCEPTOR, [[18, 4]])
                     else:
-                        game_state.attempt_spawn(INTERCEPTOR, [[20,6]])
+                        game_state.attempt_spawn(INTERCEPTOR, [[20, 6]])
                 else:
-                    game_state.attempt_spawn(WALL,[[20,8],[21,8]])
+                    game_state.attempt_spawn(WALL, [[20, 8], [21, 8]])
                     if right_steps == 4:
                         game_state.attempt_spawn(INTERCEPTOR, right)
                     elif right_steps > 4:
-                        game_state.attempt_spawn(INTERCEPTOR, [[18,4]])
+                        game_state.attempt_spawn(INTERCEPTOR, [[18, 4]])
                     else:
-                        game_state.attempt_spawn(INTERCEPTOR, [[20,6]])
+                        game_state.attempt_spawn(INTERCEPTOR, [[20, 6]])
                 right_num -= 1
 
     def rebuild_corner_defence(self, game_state, wall_locations, exceptions=[], health_threshold=65):
@@ -322,6 +326,12 @@ class AlgoStrategy(gamelib.AlgoCore):
                 else:
                     game_state.attempt_spawn(WALL, location)
 
+    def upgrade_corner(self, game_state):
+        left_wall_locations = [[24, 13], [25, 13], [26, 13], [27, 13], [23, 12]]
+        right_wall_locations = [[0, 13], [1, 13], [2, 13], [3, 13], [4, 12]]
+        wall_locations = left_wall_locations + right_wall_locations
+        game_state.attempt_upgrade(wall_locations)
+
     def handle_corner_defence(self, game_state):
         # Place turrets that attack enemy units
         turret_locations = [[3, 12], [24, 12]]
@@ -334,6 +344,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         # build walls if they don't exist, mark walls that are lower than health threshold for removal and rebuild.
         self.rebuild_corner_defence(game_state, wall_locations)
         # upgrade walls so they soak more damage
+
         # game_state.attempt_upgrade(wall_locations)
 
     def upgrade_corner_wall(self, game_state):
@@ -349,8 +360,12 @@ class AlgoStrategy(gamelib.AlgoCore):
         right_key_wall = [[16, 10]]
         right_helper_walls = [[16, 10], [15, 9], [17, 9]]
         # Turrets
-        left_turret = [[11, 9]]
-        right_turret = [[16, 9]]
+
+        right_turret = [[11, 9], [7, 11]]
+        left_turret = [[16, 9], [20, 11]]
+        game_state.attempt_spawn(TURRET, [[20, 11], [11, 9], [7, 11]])
+        game_state.attempt_spawn(WALL, right_key_wall + left_key_wall)
+        game_state.attempt_upgrade(right_key_wall)
 
         # Check if we have enough SP for both side
         if (game_state.get_resource(SP, SELF) >= 13):
@@ -378,8 +393,8 @@ class AlgoStrategy(gamelib.AlgoCore):
         game_state.attempt_spawn(WALL, right_helper_walls)
         game_state.attempt_spawn(WALL, left_helper_walls)
         game_state.attempt_upgrade(right_helper_walls)
-        game_state.attempt_upgrade(left_helper_walls)       
-         
+        game_state.attempt_upgrade(left_helper_walls)
+
     def turn1_defense(self, game_state):
         # SP: 5 (Walls) + 12 (Turrets) = 17
 
@@ -393,7 +408,8 @@ class AlgoStrategy(gamelib.AlgoCore):
         wall_locations = left_wall_locations + right_wall_locations
         game_state.attempt_spawn(WALL, wall_locations)
 
-        front_line_walls = [[5, 12], [6, 12], [7, 12], [8, 11], [9, 10], [18, 10], [19, 11], [20, 12], [21, 12], [22, 12]]
+        front_line_walls = [[5, 12], [6, 12], [7, 12], [8, 11], [9, 10], [18, 10], [19, 11], [20, 12], [21, 12],
+                            [22, 12]]
         game_state.attempt_spawn(WALL, front_line_walls)
 
         # SP: 12 (Turrets) + 1 (Key Wall) = 13
@@ -413,10 +429,11 @@ class AlgoStrategy(gamelib.AlgoCore):
         right_key_wall = [[16, 10], [15, 9], [17, 9]]
         right_wall_locations = [[23, 12], [24, 13], [25, 13], [26, 13], [27, 13]]
         left_wall_locations = [[4, 12], [3, 13], [2, 13], [1, 13], [0, 13]]
-        front_line_walls = [[5, 12], [6, 12], [7, 12], [8, 11], [9, 10], [18, 10], [19, 11], [20, 12], [21, 12], [22, 12]]
+        front_line_walls = [[5, 12], [6, 12], [7, 12], [8, 11], [9, 10], [18, 10], [19, 11], [20, 12], [21, 12],
+                            [22, 12]]
         game_state.attempt_spawn(WALL, front_line_walls)
-        game_state.attempt_upgrade(left_key_wall + right_key_wall + right_wall_locations + left_wall_locations + front_line_walls)
-
+        game_state.attempt_upgrade(
+            left_key_wall + right_key_wall + right_wall_locations + left_wall_locations + front_line_walls)
 
     def build_defences(self, game_state):
         """
@@ -444,19 +461,18 @@ class AlgoStrategy(gamelib.AlgoCore):
             if (game_state.get_resource(SP, SELF) > 4):
                 walls = [[11, 10], [16, 10]]
                 game_state.attempt_spawn(WALL, walls)
-        
+
         # Turn 5 - Should have 9 SP, build kamikaze walls
         elif (game_state.turn_number == 4):
             if (game_state.get_resource(SP, SELF) >= 9):
                 self.build_kamikaze_defence(game_state)
                 self.kamikaze_ready = True
-            
+
             self.handle_corner_defence(game_state)
             self.handle_center_defence(game_state)
 
         # Useful tool for setting up your base locations: https://www.kevinbai.design/terminal-map-maker
         # More community tools available at: https://terminal.c1games.com/rules#Download
-        
 
         # if (game_state.get_resource(SP, SELF) >= 6.5):
         else:
@@ -464,13 +480,17 @@ class AlgoStrategy(gamelib.AlgoCore):
             self.handle_center_defence(game_state)
 
             self.build_kamikaze_defence(game_state)
-        
-            if game_state.turn_number >= 5 and self.kamikaze_ready:
+            min_mobile_points = self.enemy_mobile(game_state)
+            if game_state.turn_number >= 5 and self.kamikaze_ready and game_state.get_resource(1,
+                                                                                               1) >= min_mobile_points:
                 self.spawn_kamikaze(game_state)
 
-            support_wall_loc = [[5, 12], [6, 12], [7, 12], [8, 11], [9, 10], [22, 12], [21, 12], [20, 12], [18, 10], [19, 11]]
+            support_wall_loc = [[5, 12], [6, 12], [7, 12], [8, 11], [9, 10], [22, 12], [21, 12], [20, 12], [18, 10],
+                                [19, 11]]
             game_state.attempt_spawn(WALL, support_wall_loc)
-            support_locations = [[10, 8], [11, 8], [16, 8], [17, 8], [21, 10], [22, 10], [4, 10], [5, 10]]
+            # upgrade walls
+            game_state.attempt_upgrade(support_wall_loc)
+            support_locations = [[10, 8], [11, 8], [16, 8], [17, 8], [23, 10], [22, 10], [4, 10], [5, 10]]
             game_state.attempt_spawn(SUPPORT, support_locations)
             game_state.attempt_upgrade(support_locations)
 
@@ -616,7 +636,24 @@ class AlgoStrategy(gamelib.AlgoCore):
                 filtered.append(location)
         return filtered
 
+    def enemy_mobile(self, game_state):
+        # return the minimum enemy mobile points that we need to be awared of
+        self.enemy_mobile_points.append(game_state.get_resource(1, 1))
+        gamelib.debug_write(self.enemy_mobile_points)
+        min_mobile_point = 0
+        difference = []
+        for i in range(1, len(self.enemy_mobile_points)):
+            if self.enemy_mobile_points[i - 1] + 5 - self.enemy_mobile_points[i] >= 10:
+                difference.append(self.enemy_mobile_points[i - 1] + 5 - self.enemy_mobile_points[i])
+        gamelib.debug_write(difference)
+        if difference:
+            if min(difference) >= 10:
+                return min(difference)
+        else:
+            return 10
+
     def count_attack(self, game_state):
+        # if not self.enemy_scout_spawn_locations or not self.enemy_demolisher_spawn_locations:
         scout_count = copy.copy(self.enemy_scout_spawn_locations)
         demolisher_count = copy.copy(self.enemy_demolisher_spawn_locations)
         # interceptor_count = copy.copy(self.enemy_interceptor_spawn_locations)
@@ -629,15 +666,28 @@ class AlgoStrategy(gamelib.AlgoCore):
         gamelib.debug_write(self.turn_enemy_attack_stats)
         gamelib.debug_write(
             "-------------------------------------------------------------------------------------------")
+        if game_state.turn_number >= 1:
+            # self.turn_enemy_attack_stats[game_state.turn_number - 1] = 1
 
-        if self.turn_enemy_attack_pre is None:
-            self.turn_enemy_attack_pre = self.turn_enemy_attack
-            self.turn_enemy_attack_stats[game_state.turn_number - 1] = 1
-        elif self.turn_enemy_attack_pre != self.turn_enemy_attack:
-            self.turn_enemy_attack_pre = self.turn_enemy_attack
-            self.turn_enemy_attack_stats[game_state.turn_number - 1] = 1
-        else:
-            self.turn_enemy_attack_stats[game_state.turn_number - 1] = 0
+            if not self.turn_enemy_attack_pre:
+                self.turn_enemy_attack_pre = self.turn_enemy_attack
+                self.turn_enemy_attack_stats[game_state.turn_number - 1] = 1
+            elif self.turn_enemy_attack_pre != self.turn_enemy_attack:
+                self.turn_enemy_attack_pre = self.turn_enemy_attack
+                self.turn_enemy_attack_stats[game_state.turn_number - 1] = 1
+            else:
+                self.turn_enemy_attack_stats[game_state.turn_number - 1] = 0
+
+    def time_enemy_attack(self, game_state):
+        # collect the turns when enemy attacked
+        out = []
+        for key, value in self.turn_enemy_attack_stats.items():
+            if value == 1 and key not in out:
+                out.append(key)
+        # for i in range(10):
+
+        gamelib.debug_write(out)
+        return out
 
     # This function takes unit_type as parameter (SCOUT, INTERCEPTOR, DEMOLISHER), and return the most spawned coordinate in [x, y] format
     def most_spawn_location(self, unit_type=None):
@@ -656,7 +706,7 @@ class AlgoStrategy(gamelib.AlgoCore):
                 coordinate = max(self.enemy_interceptor_spawn_locations, key=self.enemy_interceptor_spawn_locations.get)
                 coordinate = list(coordinate)
                 return coordinate
-    
+
         return None
 
     def on_action_frame(self, turn_string):
