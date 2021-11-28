@@ -60,6 +60,13 @@ class AlgoStrategy(gamelib.AlgoCore):
         self.enemy_mobile_points = []
 
         self.last_attack = ["NONE"]
+        self.attack_flag = 0
+        # attack_flag: 0 no attack, 1 prep attack, 2 attacked finished
+        self.attack_side = 0
+        #attack_side: 0 left, 1 right
+        self.attack_strat = 0
+        #attack_strat 0 short 1 long
+
 
     def on_turn(self, turn_state):
         """
@@ -120,9 +127,30 @@ class AlgoStrategy(gamelib.AlgoCore):
         # if game_state.turn_number % 2 == 0:
         #     # random number > 0.4 attack with scout only, otherwise combination of demolisher and scout
         #     self.attack_focus(game_state)
-        self.calculate_brute_force(game_state)
+        # self.calculate_brute_force(game_state)
+        if self.attack_flag == 2:
+            if self.attack_strat == 1:
+                self.long_attack(game_state, self.attack_side)
+            else:
+                self.short_attack(game_state, self.attack_side)
+            self.attack_flag = 0
 
-            # Lastly, if we have spare SP, let's build some supports and corner walls
+        if game_state.get_resource(1, 0) >= 13:
+            self.attack_flag = 1
+
+        if self.attack_flag == 1:
+            rng = random.random()
+            if rng >= 0.5:
+                self.attack_side = self.attack_prep_short(game_state)
+                self.attack_strat = 0
+            else:
+                self.attack_side = self.attack_prep_long(game_state)
+                self.attack_strat = 1
+            self.attack_flag = 2
+
+
+
+        # Lastly, if we have spare SP, let's build some supports and corner walls
         # corner_reinforcement_loc = [[1, 12], [2, 12], [25, 12], [26, 12]]
         # game_state.attempt_spawn(WALL, corner_reinforcement_loc)
         if game_state.get_resource(SP, SELF) > 20:
@@ -235,13 +263,60 @@ class AlgoStrategy(gamelib.AlgoCore):
         #         scout_spawn_location_options_bottom = [[12, 1]]
         #         game_state.attempt_spawn(SCOUT, scout_spawn_location_options_bottom, 50)
 
+    def attack_prep_short(self, game_state):
+        left_side_units, right_side_units = self.weaker_side(game_state, unit_type=None)
+        if left_side_units > right_side_units:
+            attack_side = 1
+            game_state.attempt_remove([[26, 13], [27, 13], [17, 4], [23, 9], [24, 11], [25, 11]])
+
+        else:
+            attack_side = 0
+            game_state.attempt_remove([[0, 13], [1, 13], [10, 4], [4, 9], [3, 11], [2, 12]])
+
+        return attack_side
+    def attack_prep_long(self, game_state):
+        left_side_units, right_side_units = self.weaker_side(game_state, unit_type=None)
+        if left_side_units > right_side_units:
+            attack_side = 1
+            game_state.attempt_remove([ [17, 4], [23, 9], [24, 11], [25, 11]])
+            game_state.attempt_spawn(WALL, [[5, 12]])
+        else:
+            attack_side = 0
+            game_state.attempt_remove([[10, 4], [4, 9], [3, 11], [2, 12]])
+            game_state.attempt_spawn(WALL, [[22, 12]])
+        return attack_side
+
+    def long_attack(self, game_state, attack_side):
+        # attack side 1 right, 0 left
+        if attack_side == 1:
+            start_location = [7, 6]
+            game_state.attempt_spawn(DEMOLISHER, start_location, 1)
+            game_state.attempt_spawn(SCOUT, start_location, 100)
+
+        else:
+            start_location = [20, 6]
+            game_state.attempt_spawn(DEMOLISHER, start_location, 1)
+            game_state.attempt_spawn(SCOUT, start_location, 100)
+
+    def short_attack(self, game_state, attack_side):
+        # attack side 1 right, 0 left
+        if attack_side:
+            start_location = [13, 0]
+            game_state.attempt_spawn(DEMOLISHER, start_location, 1)
+            game_state.attempt_spawn(SCOUT, start_location, 100)
+
+        else:
+            start_location = [14, 0]
+            game_state.attempt_spawn(DEMOLISHER, start_location, 1)
+            game_state.attempt_spawn(SCOUT, start_location, 100)
+
     def calculate_brute_force(self, game_state):
         # Check weaker side, to decide which edge to target
         left_side_units, right_side_units = self.weaker_side(game_state, unit_type=None)
         if left_side_units > right_side_units:
             opposite_edge = game_state.game_map.TOP_RIGHT
             start_location = [13, 0]
-        else: 
+        else:
             opposite_edge = game_state.game_map.TOP_LEFT
             start_location = [14, 0]
         # modify turret coverage to show how many turrets, will be passed through
@@ -263,9 +338,9 @@ class AlgoStrategy(gamelib.AlgoCore):
                     game_state.attempt_spawn(SCOUT, start_location, 50)
                     game_state.attempt_spawn(DEMOLISHER, start_location, 50)
                     self.last_attack.append("FULL BREACH")
-                
+
                 elif (game_state.get_resource(MP, SELF) >= 10):
-                    # Need to be able to tank 
+                    # Need to be able to tank
                     if turrets == 1:
                         game_state.attempt_spawn(SCOUT, start_location, 15)
                         self.last_attack.append("SCOUT")
@@ -274,8 +349,6 @@ class AlgoStrategy(gamelib.AlgoCore):
                 elif (game_state.get_resource(MP, SELF) < 10):
                     game_state.attempt_spawn(DEMOLISHER, start_location, 1)
                     self.last_attack.append("POKE")
-
-
 
     """------------------------------------------------DEFENCE------------------------------------------------"""
 
@@ -377,28 +450,35 @@ class AlgoStrategy(gamelib.AlgoCore):
         # attempt_spawn will try to spawn units if we have resources, and will check if a blocking unit is already there
         game_state.attempt_spawn(TURRET, turret_locations)
         # Place walls in front of turrets to soak up damage for them
-        turret_defense_walls = [[2, 13], [3, 13], [4, 13], [6, 11], [6, 10], [21, 10], [21, 11], [23, 13], [24, 13], [25, 13], [1, 13], [0, 13], [27, 13], [26, 13]]
-        V_shape_walls = [[7, 9], [7, 8], [8, 7], [9, 6], [10, 5], [11, 4], [12, 3], [13, 2], [14, 2], [15, 3], [16, 4], [17, 5], [18, 6], [19, 7], [20, 8], [20, 9]]
+        turret_defense_walls = [[2, 13], [3, 13], [4, 13], [6, 11], [6, 10], [21, 10], [21, 11], [23, 13], [24, 13],
+                                [25, 13], [1, 13], [0, 13], [27, 13], [26, 13]]
+        V_shape_walls = [[7, 9], [7, 8], [8, 7], [9, 6], [10, 5], [11, 4], [12, 3], [13, 2], [14, 2], [15, 3], [16, 4],
+                         [17, 5], [18, 6], [19, 7], [20, 8], [20, 9]]
         game_state.attempt_spawn(WALL, turret_defense_walls + V_shape_walls)
 
         upgrades = [[4, 13], [23, 13]]
         game_state.attempt_upgrade(upgrades)
-        
+
     def rebuild_tower_defenses(self, game_state):
         turret_locations = [[3, 12], [5, 10], [22, 10], [24, 12]]
         game_state.attempt_spawn(TURRET, turret_locations)
-        turret_defense_walls = [[2, 13], [3, 13], [4, 13], [6, 11], [6, 10], [21, 10], [21, 11], [23, 13], [24, 13], [25, 13], [1, 13], [0, 13], [27, 13], [26, 13]]
+        turret_defense_walls = [[2, 13], [3, 13], [4, 13], [6, 11], [6, 10], [21, 10], [21, 11], [23, 13], [24, 13],
+                                [25, 13]]
+        if self.attack_flag == 0:
+            self.rebuild_low_health_defence(game_state,[[27, 13], [26, 13], [1, 13], [0, 13]],[],WALL,25)
         self.rebuild_low_health_defence(game_state, turret_defense_walls, [], unit_type=WALL, health_threshold=25)
 
     def rebuild_v_wall(self, game_state):
-        V_shape_walls = [[7, 9], [7, 8], [8, 7], [9, 6], [10, 5], [11, 4], [12, 3], [13, 2], [14, 2], [15, 3], [16, 4], [17, 5], [18, 6], [19, 7], [20, 8], [20, 9]]
+        V_shape_walls = [[7, 9], [7, 8], [8, 7], [9, 6], [10, 5], [11, 4], [12, 3], [13, 2], [14, 2], [15, 3], [16, 4],
+                         [17, 5], [18, 6], [19, 7], [20, 8], [20, 9]]
         self.rebuild_low_health_defence(game_state, V_shape_walls, [], unit_type=WALL, health_threshold=25)
 
     def rebuild(self, game_state):
         self.rebuild_tower_defenses(game_state)
         self.rebuild_v_wall(game_state)
 
-        upgrades = [[4, 13], [23, 13], [6, 11], [21, 11], [24, 13], [3, 13], [6, 10], [21, 10], [1, 13], [0, 13], [27, 13], [26, 13]]
+        upgrades = [[4, 13], [23, 13], [6, 11], [21, 11], [24, 13], [3, 13], [6, 10], [21, 10], [1, 13], [0, 13],
+                    [27, 13], [26, 13]]
         game_state.attempt_upgrade(upgrades)
 
     def build_defences(self, game_state):
@@ -549,15 +629,16 @@ class AlgoStrategy(gamelib.AlgoCore):
                         total_turrets += 1
                         turret_locations.append(location)
         return total_turrets, turret_locations
-    
+
     def damage_on_path(self, game_state, location):
         damage = 0
         path = game_state.find_path_to_edge(location)
         gamelib.debug_write(path)
         if path:
             for path_location in path:
-                damage += len(game_state.get_attackers(path_location, 0)) * gamelib.GameUnit(TURRET, game_state.config).damage_i
-        
+                damage += len(game_state.get_attackers(path_location, 0)) * gamelib.GameUnit(TURRET,
+                                                                                             game_state.config).damage_i
+
         return damage
 
     def turrets_on_path(self, game_state, location):
@@ -566,7 +647,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         if path:
             for path_location in path:
                 turrets += len(game_state.get_attackers(path_location, 0))
-        
+
         return turrets
 
     def filter_blocked_locations(self, locations, game_state):
