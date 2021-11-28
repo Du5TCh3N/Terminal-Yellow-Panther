@@ -326,14 +326,14 @@ class AlgoStrategy(gamelib.AlgoCore):
         if attack_side:
             first_wave = [13, 0]
             game_state.attempt_spawn(SCOUT, first_wave, 8)
-            sec_wave = [12, 1]
+            sec_wave = [11, 2]
             # game_state.attempt_spawn(DEMOLISHER, sec_wave, 2)
             game_state.attempt_spawn(SCOUT, sec_wave, 100)
 
         else:
             first_wave = [14, 0]
             game_state.attempt_spawn(SCOUT, first_wave, 8)
-            sec_wave = [15, 1]
+            sec_wave = [16, 2]
             # game_state.attempt_spawn(DEMOLISHER, start_location, 2)
             game_state.attempt_spawn(SCOUT, sec_wave, 100)
 
@@ -569,6 +569,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         game_state.attempt_spawn(TURRET, turret_locations)
         turret_defense_walls = [[2, 13], [3, 13], [4, 13], [6, 11], [6, 10], [21, 10], [21, 11], [23, 13], [24, 13],
                                 [25, 13]]
+        # If attacking
         if self.attack_flag == 0:
             self.rebuild_low_health_defence(game_state,[[27, 13], [26, 13], [1, 13], [0, 13]],[],WALL,25)
         self.rebuild_low_health_defence(game_state, turret_defense_walls, [], unit_type=WALL, health_threshold=25)
