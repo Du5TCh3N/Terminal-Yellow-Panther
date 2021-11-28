@@ -599,8 +599,8 @@ class AlgoStrategy(gamelib.AlgoCore):
 
         # if turn 7 or more, have 20 SP
         if (game_state.turn_number >= 7):
-            if game_state.get_resource(MP, SELF) >= 20:
-                spendableSP = game_state.get_resource(MP, SELF) - 10
+            if game_state.get_resource(SP, SELF) >= 20:
+                spendableSP = game_state.get_resource(SP, SELF) - 10
                 # healthy state, build supports first. Build turrets when late game (more than 25 turns)
                 if (game_state.turn_number > 7 and game_state.my_health >= 15) or (game_state.turn_number >= 25):
                     support_locations = [[13, 3], [14, 3], [12, 4], [15, 4], [13, 4], [14, 4], [11, 5], [17, 6]]
