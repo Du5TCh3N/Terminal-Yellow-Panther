@@ -145,7 +145,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         else:
             self.build_defences(game_state)
             rng = random.random()
-            if rng >= 0.5:
+            if rng >= 0.65:
                 self.attack_side = self.attack_prep_short(game_state)
                 self.attack_strat = 0
             else:
