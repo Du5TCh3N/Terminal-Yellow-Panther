@@ -656,6 +656,17 @@ class AlgoStrategy(gamelib.AlgoCore):
                                 number_buildable -= 1
                             else:
                                 i += 1
+                # just build more defenses after round 25
+                if (game_state.turn_number >= 25):
+                    number_buildable = spendableSP // 7
+                    i = 0
+                    build_turrets_locations = [[9, 7], [10, 7], [11, 7], [12, 7], [13, 7], [14, 7], [15, 7], [16, 7], [18, 7]]
+                    if game_state.attempt_spawn(TURRET, build_turrets_locations[i]) == 1:
+                        i += 1
+                        number_buildable -= 1
+                    else:
+                        i += 1
+
 
     def build_defences(self, game_state):
         """
