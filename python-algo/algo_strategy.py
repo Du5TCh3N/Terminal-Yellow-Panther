@@ -332,14 +332,14 @@ class AlgoStrategy(gamelib.AlgoCore):
         if attack_side:
             first_wave = [13, 0]
             game_state.attempt_spawn(SCOUT, first_wave, 8)
-            sec_wave = [12, 1]
+            sec_wave = [11, 2]
             # game_state.attempt_spawn(DEMOLISHER, sec_wave, 2)
             game_state.attempt_spawn(SCOUT, sec_wave, 100)
 
         else:
             first_wave = [14, 0]
             game_state.attempt_spawn(SCOUT, first_wave, 8)
-            sec_wave = [15, 1]
+            sec_wave = [16, 2]
             # game_state.attempt_spawn(DEMOLISHER, start_location, 2)
             game_state.attempt_spawn(SCOUT, sec_wave, 100)
 
@@ -573,9 +573,9 @@ class AlgoStrategy(gamelib.AlgoCore):
     def rebuild_tower_defenses(self, game_state):
         turret_locations = [[3, 12], [5, 10], [22, 10], [24, 12]]
         game_state.attempt_spawn(TURRET, turret_locations)
-        turret_defense_walls = [[2, 13], [3, 13], [4, 13], [6, 11], [6, 10], [21, 10], [21, 11], [23, 13], [24, 13],[25, 13]]
-        
-        gamelib.debug_write("REBUILDING, attack flag is", self.attack_flag)
+        turret_defense_walls = [[2, 13], [3, 13], [4, 13], [6, 11], [6, 10], [21, 10], [21, 11], [23, 13], [24, 13],
+                                [25, 13]]
+        # If attacking
         if self.attack_flag == 0:
             self.rebuild_low_health_defence(game_state,[[27, 13], [26, 13], [1, 13], [0, 13]],[],WALL,25)
         self.rebuild_low_health_defence(game_state, turret_defense_walls, [], unit_type=WALL, health_threshold=25)
@@ -598,43 +598,42 @@ class AlgoStrategy(gamelib.AlgoCore):
         # If health is in a good position, build supports
         
         if game_state.turn_number > 7 and game_state.my_health >= 15:
-            row_1_support_locations = [[11, 7], [12, 7], [13, 7], [14, 7], [15, 7], [16, 7]]
-            row_2_support_locations = [[11, 6], [12, 6], [13, 6], [14, 6], [15, 6], [16, 6]]
-            row_3_support_locations = [[11, 5], [12, 5], [13, 5], [14, 5], [15, 5], [16, 5]]
-            game_state.attempt_spawn(SUPPORT, row_1_support_locations)
-            game_state.attempt_upgrade(row_1_support_locations)
-            game_state.attempt_spawn(SUPPORT, row_2_support_locations)
-            game_state.attempt_upgrade(row_2_support_locations)
-            game_state.attempt_spawn(SUPPORT, row_3_support_locations)
-            game_state.attempt_upgrade(row_3_support_locations)
+            support_locations = [[13, 3], [14, 3], [12, 4], [15, 4], [13, 4], [14, 4], [11, 5], [17, 6]]
+            game_state.attempt_spawn(SUPPORT, support_locations)
+            game_state.attempt_upgrade(support_locations)
 
         # If health is low, build more turrets to boost defense
         elif game_state.turn_number > 7 and game_state.my_health <= 15:
-            build_turrets_locations = []
+            build_turrets_locations = [[3, 12], [5, 10], [22, 10], [24, 12]]
             build_walls_locations = []
 
             for location in self.scored_on_locations:
                 if location in [[0, 13], [1, 12], [2, 11], [3, 10], [4, 9], [5, 8], [6, 7], [7, 6]]:
+                    build_turrets_locations.append([4, 12])
                     build_turrets_locations.append([7, 10])
                     build_turrets_locations.append([7, 11])
                     build_walls_locations.append([7, 12])
                     build_walls_locations.append([8, 11])
                     game_state.attempt_spawn(TURRET, build_turrets_locations)
                     game_state.attempt_spawn(WALL, build_walls_locations)
+                    game_state.attempt_upgrade(build_walls_locations)
                     game_state.attempt_upgrade(build_turrets_locations)
                 elif location in [[27, 13], [26, 12], [25, 11], [24, 10], [23, 9], [22, 8], [21, 7], [20, 6]]:
+                    build_turrets_locations.append([23, 12])
                     build_turrets_locations.append([20, 10])
                     build_turrets_locations.append([20, 11])
                     build_walls_locations.append([20, 12])
                     build_walls_locations.append([19, 11])
                     game_state.attempt_spawn(TURRET, build_turrets_locations)
                     game_state.attempt_spawn(WALL, build_walls_locations)
+                    game_state.attempt_upgrade(build_walls_locations)
                     game_state.attempt_upgrade(build_turrets_locations)
                 else:
                     build_turrets_locations.append([location[0], location[1]+3])
                     build_walls_locations.append([location[0], location[1]+4])
                     game_state.attempt_spawn(TURRET, build_turrets_locations)
                     game_state.attempt_spawn(WALL, build_walls_locations)
+                    game_state.attempt_upgrade(build_walls_locations)
                     game_state.attempt_upgrade(build_turrets_locations)
 
     def build_defences(self, game_state):
