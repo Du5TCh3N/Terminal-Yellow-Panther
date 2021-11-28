@@ -587,6 +587,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         # All other turns
         else:
             self.rebuild(game_state)
+            self.spawn_kamikaze(game_state)
 
     # def build_reactive_defense(self, game_state):
     #     """
