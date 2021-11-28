@@ -135,7 +135,8 @@ class AlgoStrategy(gamelib.AlgoCore):
                 self.short_attack(game_state, self.attack_side)
             self.attack_flag = 0
 
-        if game_state.get_resource(1, 0) >= 13:
+        if game_state.get_resource(MP, SELF) >= 13:
+            gamelib.debug_write("OUR MP IS CURRENTLY", game_state.get_resource(MP, SELF))
             self.attack_flag = 1
 
         if self.attack_flag == 1:
@@ -430,6 +431,7 @@ class AlgoStrategy(gamelib.AlgoCore):
     def spawn_kamikaze(self, game_state):
         mpThreshold = math.floor(self.enemy_mobile(game_state))
         gamelib.debug_write("MP Threshold is", mpThreshold)
+        gamelib.debug_write("Attack flag", self.attack_flag)
         if game_state.get_resource(MP, SELF) >= mpThreshold and self.attack_flag != 2:
             scouts = self.most_spawn_location(SCOUT)
             demos = self.most_spawn_location(DEMOLISHER)
