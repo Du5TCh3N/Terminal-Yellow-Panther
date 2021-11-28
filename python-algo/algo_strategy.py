@@ -153,7 +153,7 @@ class AlgoStrategy(gamelib.AlgoCore):
                 self.attack_strat = 1
             self.attack_flag = 2
 
-        if game_state.get_resource(MP, SELF) >= 13 and self.attack_signal == 0:
+        if game_state.get_resource(MP, ENEMY) < self.enemy_mobile(game_state) and game_state.get_resource(MP, SELF) >= 13 and self.attack_signal == 0:
             self.attack_flag = 1
             self.attack_signal = 1
         
@@ -401,7 +401,7 @@ class AlgoStrategy(gamelib.AlgoCore):
     """ KAMIKAZE STUFF """             
 
     def __fast_kamikaze_defence(self, game_state, left=True, right=True):
-        gamelib.debug_write("RUNNING FAST DEFENCE")
+        # gamelib.debug_write("RUNNING FAST DEFENCE")
         # 2 SP
         leftWalls = [[2,12],[3,11]] if left else [[0,0]]
         rightWalls = [[25,12],[24,11]] if right else [[0,0]]
@@ -454,8 +454,8 @@ class AlgoStrategy(gamelib.AlgoCore):
     """
     def spawn_kamikaze(self, game_state):
         mpThreshold = math.floor(self.enemy_mobile(game_state))
-        gamelib.debug_write("MP Threshold is", mpThreshold)
-        gamelib.debug_write("Attack flag", self.attack_flag)
+        # gamelib.debug_write("MP Threshold is", mpThreshold)
+        # gamelib.debug_write("Attack flag", self.attack_flag)
         if game_state.get_resource(MP, SELF) >= mpThreshold and self.attack_flag != 2 and game_state.turn_number>=2:        
             scouts = self.most_spawn_location(SCOUT)
             demos = self.most_spawn_location(DEMOLISHER)
@@ -473,23 +473,23 @@ class AlgoStrategy(gamelib.AlgoCore):
                         
             
             if scouts_lr["left"] > 1 and demos_lr["left"] > 1:
-                gamelib.debug_write("RUNNING SLOW DEFENCE 1")
+                # gamelib.debug_write("RUNNING SLOW DEFENCE 1")
                 self.__slow_kamikaze_defence(game_state, True, False, demos_lr["left"])
             elif scouts_lr["left"] > 1 and demos_lr["left"] <= 1:
-                gamelib.debug_write("RUNNING SLOW DEFENCE 2")
+                # gamelib.debug_write("RUNNING SLOW DEFENCE 2")
                 self.__slow_kamikaze_defence(game_state, True, False, scouts_lr["left"])
             elif demos_lr["left"] > 1 and scouts_lr["left"] <= 1:
-                gamelib.debug_write("RUNNING SLOW DEFENCE 3")
+                # gamelib.debug_write("RUNNING SLOW DEFENCE 3")
                 self.__slow_kamikaze_defence(game_state, True, False, demos_lr["left"])
                 
             if scouts_lr["right"] > 1 and demos_lr["right"] > 1:
-                gamelib.debug_write("RUNNING SLOW DEFENCE 4")
+                # gamelib.debug_write("RUNNING SLOW DEFENCE 4")
                 self.__slow_kamikaze_defence(game_state, False, True, demos_lr["right"])
             elif scouts_lr["left"] > 1 and demos_lr["right"] <= 1:
-                gamelib.debug_write("RUNNING SLOW DEFENCE 5")
+                # gamelib.debug_write("RUNNING SLOW DEFENCE 5")
                 self.__slow_kamikaze_defence(game_state, False, True, scouts_lr["right"])
             elif demos_lr["left"] > 1 and scouts_lr["right"] <= 1:
-                gamelib.debug_write("RUNNING SLOW DEFENCE 6")
+                # gamelib.debug_write("RUNNING SLOW DEFENCE 6")
                 self.__slow_kamikaze_defence(game_state, False, True, demos_lr["right"])
 
 
@@ -856,7 +856,7 @@ class AlgoStrategy(gamelib.AlgoCore):
     def damage_on_path(self, game_state, location):
         damage = 0
         path = game_state.find_path_to_edge(location)
-        gamelib.debug_write(path)
+        # gamelib.debug_write(path)
         if path:
             for path_location in path:
                 damage += len(game_state.get_attackers(path_location, 0)) * gamelib.GameUnit(TURRET,
@@ -883,13 +883,13 @@ class AlgoStrategy(gamelib.AlgoCore):
     def enemy_mobile(self, game_state):
         # return the minimum enemy mobile points that we need to be awared of
         self.enemy_mobile_points.append(game_state.get_resource(1, 1))
-        gamelib.debug_write(self.enemy_mobile_points)
+        # gamelib.debug_write(self.enemy_mobile_points)
         min_mobile_point = 0
         difference = []
         for i in range(1, len(self.enemy_mobile_points)):
             if self.enemy_mobile_points[i - 1] + 5 - self.enemy_mobile_points[i] >= 10:
                 difference.append(self.enemy_mobile_points[i - 1] + 5 - self.enemy_mobile_points[i])
-        gamelib.debug_write(difference)
+        # gamelib.debug_write(difference)
         if difference:
             if min(difference) >= 10:
                 return min(difference)
@@ -903,13 +903,13 @@ class AlgoStrategy(gamelib.AlgoCore):
         # interceptor_count = copy.copy(self.enemy_interceptor_spawn_locations)
         self.turn_enemy_attack = [scout_count,
                                   demolisher_count]
-        gamelib.debug_write(
-            "-------------------------------------------------------------------------------------------")
-        gamelib.debug_write(self.turn_enemy_attack)
-        gamelib.debug_write(self.turn_enemy_attack_pre)
-        gamelib.debug_write(self.turn_enemy_attack_stats)
-        gamelib.debug_write(
-            "-------------------------------------------------------------------------------------------")
+        # gamelib.debug_write(
+        #     "-------------------------------------------------------------------------------------------")
+        # gamelib.debug_write(self.turn_enemy_attack)
+        # gamelib.debug_write(self.turn_enemy_attack_pre)
+        # gamelib.debug_write(self.turn_enemy_attack_stats)
+        # gamelib.debug_write(
+        #     "-------------------------------------------------------------------------------------------")
         if game_state.turn_number >= 1:
             # self.turn_enemy_attack_stats[game_state.turn_number - 1] = 1
 
@@ -930,7 +930,7 @@ class AlgoStrategy(gamelib.AlgoCore):
                 out.append(key)
         # for i in range(10):
 
-        gamelib.debug_write(out)
+        # gamelib.debug_write(out)
         return out
 
     # This function takes unit_type as parameter (SCOUT, INTERCEPTOR, DEMOLISHER), and return the most spawned coordinate in [x, y] format
@@ -963,16 +963,16 @@ class AlgoStrategy(gamelib.AlgoCore):
         # Let's record at what position we get scored on
         state = json.loads(turn_string)
         events = state["events"]
-        breaches = events["breach"]
-        for breach in breaches:
-            location = breach[0]
-            unit_owner_self = True if breach[4] == 1 else False
-            # When parsing the frame data directly, 
-            # 1 is integer for yourself, 2 is opponent (StarterKit code uses 0, 1 as player_index instead)
-            if not unit_owner_self:
-                gamelib.debug_write("Got scored on at: {}".format(location))
-                self.scored_on_locations.append(location)
-                gamelib.debug_write("All locations: {}".format(self.scored_on_locations))
+        # breaches = events["breach"]
+        # for breach in breaches:
+        #     location = breach[0]
+        #     unit_owner_self = True if breach[4] == 1 else False
+        #     # When parsing the frame data directly, 
+        #     # 1 is integer for yourself, 2 is opponent (StarterKit code uses 0, 1 as player_index instead)
+        #     if not unit_owner_self:
+        #         gamelib.debug_write("Got scored on at: {}".format(location))
+        #         self.scored_on_locations.append(location)
+        #         gamelib.debug_write("All locations: {}".format(self.scored_on_locations))
         spawns = events["spawn"]
         for spawn in spawns:
             location = tuple(spawn[0])
