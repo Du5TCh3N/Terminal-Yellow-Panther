@@ -596,45 +596,64 @@ class AlgoStrategy(gamelib.AlgoCore):
 
     def extend_defense(self, game_state):
         # If health is in a good position, build supports
-        
-        if game_state.turn_number > 7 and game_state.my_health >= 15:
-            support_locations = [[13, 3], [14, 3], [12, 4], [15, 4], [13, 4], [14, 4], [11, 5], [17, 6]]
-            game_state.attempt_spawn(SUPPORT, support_locations)
-            game_state.attempt_upgrade(support_locations)
 
-        # If health is low, build more turrets to boost defense
-        elif game_state.turn_number > 7 and game_state.my_health <= 15:
-            build_turrets_locations = [[3, 12], [5, 10], [22, 10], [24, 12]]
-            build_walls_locations = []
+        # if turn 7 or more, have 20 SP
+        if (game_state.turn_number >= 7):
+            if game_state.get_resource(MP, SELF) >= 20:
+                spendableSP = game_state.get_resource(MP, SELF) - 10
+                # healthy state, build supports first. Build turrets when late game (more than 25 turns)
+                if (game_state.turn_number > 7 and game_state.my_health >= 15) or (game_state.turn_number >= 25):
+                    support_locations = [[13, 3], [14, 3], [12, 4], [15, 4], [13, 4], [14, 4], [11, 5], [17, 6]]
+                    number_buildable = spendableSP // 2
+                    while number_buildable != 0:
+                        i = 0
+                        if game_state.attempt_spawn(SUPPORT, support_locations[i]) == 1:
+                            i += 1
+                            number_buildable -= 1
+                        else: 
+                            i += 1
 
-            for location in self.scored_on_locations:
-                if location in [[0, 13], [1, 12], [2, 11], [3, 10], [4, 9], [5, 8], [6, 7], [7, 6]]:
-                    build_turrets_locations.append([4, 12])
-                    build_turrets_locations.append([7, 10])
-                    build_turrets_locations.append([7, 11])
-                    build_walls_locations.append([7, 12])
-                    build_walls_locations.append([8, 11])
-                    game_state.attempt_spawn(TURRET, build_turrets_locations)
-                    game_state.attempt_spawn(WALL, build_walls_locations)
-                    game_state.attempt_upgrade(build_walls_locations)
-                    game_state.attempt_upgrade(build_turrets_locations)
-                elif location in [[27, 13], [26, 12], [25, 11], [24, 10], [23, 9], [22, 8], [21, 7], [20, 6]]:
-                    build_turrets_locations.append([23, 12])
-                    build_turrets_locations.append([20, 10])
-                    build_turrets_locations.append([20, 11])
-                    build_walls_locations.append([20, 12])
-                    build_walls_locations.append([19, 11])
-                    game_state.attempt_spawn(TURRET, build_turrets_locations)
-                    game_state.attempt_spawn(WALL, build_walls_locations)
-                    game_state.attempt_upgrade(build_walls_locations)
-                    game_state.attempt_upgrade(build_turrets_locations)
-                else:
-                    build_turrets_locations.append([location[0], location[1]+3])
-                    build_walls_locations.append([location[0], location[1]+4])
-                    game_state.attempt_spawn(TURRET, build_turrets_locations)
-                    game_state.attempt_spawn(WALL, build_walls_locations)
-                    game_state.attempt_upgrade(build_walls_locations)
-                    game_state.attempt_upgrade(build_turrets_locations)
+                # not healthy, build turrets first. Build turrets when late game (more than 25 turns)
+                if (game_state.turn_number > 7 and game_state.my_health >= 15) or (game_state.turn_number >= 25):
+                    build_turrets_locations = [[3, 12], [5, 10], [22, 10], [24, 12]]
+                    build_walls_locations = []
+
+                    for location in self.scored_on_locations:
+                        if location in [[0, 13], [1, 12], [2, 11], [3, 10], [4, 9], [5, 8], [6, 7], [7, 6]]:
+                            build_turrets_locations.append([4, 12])
+                            build_turrets_locations.append([7, 10])
+                            build_turrets_locations.append([7, 11])
+                            build_walls_locations.append([7, 12])
+                            build_walls_locations.append([8, 11])
+                        elif location in [[27, 13], [26, 12], [25, 11], [24, 10], [23, 9], [22, 8], [21, 7], [20, 6]]:
+                            build_turrets_locations.append([23, 12])
+                            build_turrets_locations.append([20, 10])
+                            build_turrets_locations.append([20, 11])
+                            build_walls_locations.append([20, 12])
+                            build_walls_locations.append([19, 11])
+                        else:
+                            build_turrets_locations.append([location[0], location[1]+3])
+                            build_walls_locations.append([location[0], location[1]+4])
+                        
+                    number_buildable = spendableSP // 6
+                    while number_buildable != 0:
+                        i = 0
+                        if game_state.attempt_spawn(TURRET, build_turrets_locations[i]) == 1:
+                            i += 1
+                            number_buildable -= 1
+                        else:
+                            i += 1
+
+                    spendableSP = spendableSP - (number_buildable * 6)
+                    if spendableSP >= 1:
+                        number_buildable = spendableSP
+                        while number_buildable != 0:
+                            i = 0
+                            if game_state.attempt_spawn(WALL, build_walls_locations[i]) == 1:
+                                i += 1
+                                number_buildable -= 1
+                            else:
+                                i += 1
 
     def build_defences(self, game_state):
         """
