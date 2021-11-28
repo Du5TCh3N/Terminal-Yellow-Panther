@@ -429,6 +429,7 @@ class AlgoStrategy(gamelib.AlgoCore):
     """
     def spawn_kamikaze(self, game_state):
         mpThreshold = self.enemy_mobile(game_state)
+        gamelib.debug_write("MP Threshold is: ", mpThreshold)
         if game_state.get_resource(MP, SELF) >= mpThreshold and self.attack_flag != 2:
             scouts = self.most_spawn_location(SCOUT)
             demos = self.most_spawn_location(DEMOLISHER)
