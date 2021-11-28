@@ -368,9 +368,7 @@ class AlgoStrategy(gamelib.AlgoCore):
                     game_state.attempt_spawn(DEMOLISHER, start_location, 1)
                     self.last_attack.append("POKE")
 
-<<<<<<< HEAD
     """------------------------------------------------DEFENCE------------------------------------------------"""
-=======
 
 
     """--------------------BUILD DEFENCE--------------------"""       
@@ -417,7 +415,6 @@ class AlgoStrategy(gamelib.AlgoCore):
             game_state.attempt_spawn(WALL, extraLeft + extraRight)
         else:
             game_state.attempt_remove(WALL, extraLeft + extraRight)
->>>>>>> priorityUpgrade
 
     
     """ 
@@ -431,7 +428,7 @@ class AlgoStrategy(gamelib.AlgoCore):
     """
     def spawn_kamikaze(self, game_state):
         mpThreshold = self.enemy_mobile(game_state)
-        if game_state.get_resource(MP, SELF) >= mpThreshold: # and self.attack_flag == 0:
+        if game_state.get_resource(MP, SELF) >= mpThreshold and self.attack_flag != 2:
             scouts = self.most_spawn_location(SCOUT)
             demos = self.most_spawn_location(DEMOLISHER)
             scouts_lr = self.kamikaze_ideal_steps(game_state, scouts)
