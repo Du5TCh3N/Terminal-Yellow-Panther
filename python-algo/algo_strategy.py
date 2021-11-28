@@ -437,7 +437,7 @@ class AlgoStrategy(gamelib.AlgoCore):
 
     """ Others """
 
-    def rebuild_corner_defence(self, game_state, wall_locations, exceptions=[], health_threshold=65):
+    def rebuild_low_health_defence(self, game_state, locations, exceptions=[], unit_type=None, health_threshold=65):
         """
         Rebuild corner defence (defence that should exist every turn) if their health is less than
         `health_threshold`.
@@ -450,124 +450,46 @@ class AlgoStrategy(gamelib.AlgoCore):
         `health_threshold`: Value is from 0-100
         """
         for location in game_state.game_map:
-            if (location in wall_locations) and (location not in exceptions):
+            if (location in locations) and (location not in exceptions):
                 # if wall currently exists at the location, check its health
                 if game_state.contains_stationary_unit(location):
                     for unit in game_state.game_map[location]:
-                        if unit.player_index == 0 and (unit.unit_type == WALL) and (
+                        if unit.player_index == 0 and (unit.unit_type == unit_type) and (
                                 unit.health <= (health_threshold / 100) * unit.max_health):
                             game_state.attempt_remove(location)
                 # if wall doesn't exist in the location
                 else:
-                    game_state.attempt_spawn(WALL, location)
+                    game_state.attempt_spawn(unit_type, location)
 
-    def upgrade_corner(self, game_state):
-        left_wall_locations = [[24, 13], [25, 13], [26, 13], [27, 13], [23, 12]]
-        right_wall_locations = [[0, 13], [1, 13], [2, 13], [3, 13], [4, 12]]
-        wall_locations = left_wall_locations + right_wall_locations
-        game_state.attempt_upgrade(wall_locations)
-
-    def handle_corner_defence(self, game_state):
+    def initial_build(self, game_state):
         # Place turrets that attack enemy units
-        turret_locations = [[3, 12], [24, 12]]
+        turret_locations = [[3, 12], [5, 10], [22, 10], [24, 12]]
         # attempt_spawn will try to spawn units if we have resources, and will check if a blocking unit is already there
         game_state.attempt_spawn(TURRET, turret_locations)
         # Place walls in front of turrets to soak up damage for them
-        right_wall_locations = [[23, 12], [24, 13], [25, 13], [26, 13], [27, 13]]
-        left_wall_locations = [[4, 12], [3, 13], [2, 13], [1, 13], [0, 13]]
-        wall_locations = left_wall_locations + right_wall_locations
-        # build walls if they don't exist, mark walls that are lower than health threshold for removal and rebuild.
-        self.rebuild_corner_defence(game_state, wall_locations)
-        # upgrade walls so they soak more damage
+        turret_defense_walls = [[2, 13], [3, 13], [4, 13], [6, 11], [6, 10], [21, 10], [21, 11], [23, 13], [24, 13], [25, 13], [1, 13], [0, 13], [27, 13], [26, 13]]
+        V_shape_walls = [[7, 9], [7, 8], [8, 7], [9, 6], [10, 5], [11, 4], [12, 3], [13, 2], [14, 2], [15, 3], [16, 4], [17, 5], [18, 6], [19, 7], [20, 8], [20, 9]]
+        game_state.attempt_spawn(WALL, turret_defense_walls + V_shape_walls)
 
-        # game_state.attempt_upgrade(wall_locations)
-
-    def upgrade_corner_wall(self, game_state):
-        right_wall_locations = [[23, 12], [24, 13], [25, 13], [26, 13], [27, 13]]
-        left_wall_locations = [[4, 12], [3, 13], [2, 13], [1, 13], [0, 13]]
-        wall_locations = left_wall_locations + right_wall_locations
-        game_state.attempt_upgrade(wall_locations)
-
-    def handle_center_defence(self, game_state):
-        # Walls
-        left_key_wall = [[11, 10]]
-        left_helper_walls = [[11, 10], [10, 9], [12, 9]]
-        right_key_wall = [[16, 10]]
-        right_helper_walls = [[16, 10], [15, 9], [17, 9]]
-        # Turrets
-
-        right_turret = [[11, 9], [7, 11]]
-        left_turret = [[16, 9], [20, 11]]
-        game_state.attempt_spawn(TURRET, [[20, 11], [11, 9], [7, 11]])
-        game_state.attempt_spawn(WALL, right_key_wall + left_key_wall)
-        game_state.attempt_upgrade(right_key_wall)
-
-        # Check if we have enough SP for both side
-        if (game_state.get_resource(SP, SELF) >= 13):
-            game_state.attempt_spawn(TURRET, right_turret)
-            game_state.attempt_spawn(TURRET, left_turret)
-            game_state.attempt_spawn(WALL, right_key_wall)
-            game_state.attempt_spawn(WALL, left_key_wall)
-            game_state.attempt_spawn(WALL, right_helper_walls)
-            game_state.attempt_spawn(WALL, left_helper_walls)
-            self.upgrade_corner_wall(game_state)
-            game_state.attempt_upgrade(right_key_wall)
-            game_state.attempt_upgrade(left_key_wall)
-
-        # Check if we have enough SP for 1 turret and 1 wall
-        elif (game_state.get_resource(SP, SELF) >= 6.5):
-            game_state.attempt_spawn(WALL, left_key_wall + right_key_wall)
-            game_state.attempt_spawn(TURRET, left_turret + right_turret)
-            self.upgrade_corner_wall(game_state)
-            game_state.attempt_upgrade(left_key_wall + right_key_wall)
-
-        # Check if we have enough SP for just walls
-
-        # elif (game_state.get_resource(SP, SELF) >= 3):
-        self.upgrade_corner_wall(game_state)
-        game_state.attempt_spawn(WALL, right_helper_walls)
-        game_state.attempt_spawn(WALL, left_helper_walls)
-        game_state.attempt_upgrade(right_helper_walls)
-        game_state.attempt_upgrade(left_helper_walls)
-
-    def turn1_defense(self, game_state):
-        # Place turrets that attack enemy units
-        turret_locations = [[7, 11], [20, 11]]
-        # attempt_spawn will try to spawn units if we have resources, and will check if a blocking unit is already there
+        upgrades = [[4, 13], [23, 13]]
+        game_state.attempt_upgrade(upgrades)
+        
+    def rebuild_tower_defenses(self, game_state):
+        turret_locations = [[3, 12], [5, 10], [22, 10], [24, 12]]
         game_state.attempt_spawn(TURRET, turret_locations)
-        # Place walls in front of turrets to soak up damage for them
-        right_first_row_walls = [[24, 13], [25, 13], [26, 13], [27, 13]]
-        right_second_row_walls = [[20, 12], [21, 12], [22, 12], [23, 12]]
-        right_diagonal_walls = [[19, 11], [16, 10], [18, 10]]
-        left_first_row_walls = [[3, 13], [2, 13], [1, 13], [0, 13]]
-        left_second_row_walls = [[7, 12], [6, 12], [5, 12], [4, 12]]
-        left_diagonal_walls = [[8, 11], [9, 10], [11, 10]]
-        wall_locations = right_first_row_walls + right_second_row_walls + right_diagonal_walls + left_first_row_walls + left_second_row_walls + left_diagonal_walls
-        game_state.attempt_spawn(WALL, wall_locations)
+        turret_defense_walls = [[2, 13], [3, 13], [4, 13], [6, 11], [6, 10], [21, 10], [21, 11], [23, 13], [24, 13], [25, 13], [1, 13], [0, 13], [27, 13], [26, 13]]
+        self.rebuild_low_health_defence(game_state, turret_defense_walls, [], unit_type=WALL, health_threshold=25)
 
-        interceptor_line_walls = [[4, 10], [5, 10], [22, 10], [23, 10], [6, 9], [21, 9], [7, 8], [20, 8], [8, 7], [19, 7], [8, 6], [19, 6]]
-        game_state.attempt_spawn(WALL, interceptor_line_walls)
+    def rebuild_v_wall(self, game_state):
+        V_shape_walls = [[7, 9], [7, 8], [8, 7], [9, 6], [10, 5], [11, 4], [12, 3], [13, 2], [14, 2], [15, 3], [16, 4], [17, 5], [18, 6], [19, 7], [20, 8], [20, 9]]
+        self.rebuild_low_health_defence(game_state, V_shape_walls, [], unit_type=WALL, health_threshold=25)
 
-        game_state.attempt_upgrade(left_second_row_walls)
-        game_state.attempt_upgrade(right_second_row_walls)
-        game_state.attempt_upgrade(left_diagonal_walls)
-        game_state.attempt_upgrade(right_diagonal_walls)
-        game_state.attempt_upgrade(left_first_row_walls)
-        game_state.attempt_upgrade(right_first_row_walls)
+    def rebuild(self, game_state):
+        self.rebuild_tower_defenses(game_state)
+        self.rebuild_v_wall(game_state)
 
-        interceptor_spawn = [[20, 6], [7, 6]]
-        game_state.attempt_spawn(INTERCEPTOR, interceptor_spawn)
-
-    def turn2_defense(self, game_state):
-        left_key_wall = [[11, 10], [10, 9], [12, 9]]
-        right_key_wall = [[16, 10], [15, 9], [17, 9]]
-        right_wall_locations = [[23, 12], [24, 13], [25, 13], [26, 13], [27, 13]]
-        left_wall_locations = [[4, 12], [3, 13], [2, 13], [1, 13], [0, 13]]
-        front_line_walls = [[5, 12], [6, 12], [7, 12], [8, 11], [9, 10], [18, 10], [19, 11], [20, 12], [21, 12],
-                            [22, 12]]
-        game_state.attempt_spawn(WALL, front_line_walls)
-        game_state.attempt_upgrade(
-            left_key_wall + right_key_wall + right_wall_locations + left_wall_locations + front_line_walls)
+        upgrades = [[4, 13], [23, 13], [6, 11], [21, 11], [24, 13], [3, 13], [6, 10], [21, 10], [1, 13], [0, 13], [27, 13], [26, 13]]
+        game_state.attempt_upgrade(upgrades)
 
     def build_defences(self, game_state):
         """
@@ -577,56 +499,11 @@ class AlgoStrategy(gamelib.AlgoCore):
 
         # Turn 1 - Build Initial Defense
         if game_state.turn_number == 0:
-            self.turn1_defense(game_state)
+            self.initial_build(game_state)
 
-        # Turn 2 - Rebuild, and extend wall ranges
-        elif game_state.turn_number == 1:
-            self.turn1_defense(game_state)
-            self.turn2_defense(game_state)
-
-        # Turn 3 - Rebuild
-        elif game_state.turn_number == 2:
-            self.turn1_defense(game_state)
-            self.turn2_defense(game_state)
-
-        # Turn 4 - Save atleast 4 SP
-        elif game_state.turn_number == 3:
-            # Receive 5 SP on round start, rebuild key walls, and save the rest
-            if (game_state.get_resource(SP, SELF) > 4):
-                walls = [[11, 10], [16, 10]]
-                game_state.attempt_spawn(WALL, walls)
-
-        # Turn 5 - Should have 9 SP, build kamikaze walls
-        elif (game_state.turn_number == 4):
-            if (game_state.get_resource(SP, SELF) >= 9):
-                self.build_kamikaze_defence(game_state)
-                self.kamikaze_ready = True
-
-            self.handle_corner_defence(game_state)
-            self.handle_center_defence(game_state)
-
-        # Useful tool for setting up your base locations: https://www.kevinbai.design/terminal-map-maker
-        # More community tools available at: https://terminal.c1games.com/rules#Download
-
-        # if (game_state.get_resource(SP, SELF) >= 6.5):
+        # All other turns
         else:
-            self.handle_corner_defence(game_state)
-            self.handle_center_defence(game_state)
-
-            self.build_kamikaze_defence(game_state)
-            min_mobile_points = self.enemy_mobile(game_state)
-            if game_state.turn_number >= 5 and self.kamikaze_ready and game_state.get_resource(1,
-                                                                                               1) >= min_mobile_points:
-                self.spawn_kamikaze(game_state)
-
-            support_wall_loc = [[5, 12], [6, 12], [7, 12], [8, 11], [9, 10], [22, 12], [21, 12], [20, 12], [18, 10],
-                                [19, 11]]
-            game_state.attempt_spawn(WALL, support_wall_loc)
-            # upgrade walls
-            game_state.attempt_upgrade(support_wall_loc)
-            support_locations = [[10, 8], [11, 8], [16, 8], [17, 8], [23, 10], [22, 10], [4, 10], [5, 10]]
-            game_state.attempt_spawn(SUPPORT, support_locations)
-            game_state.attempt_upgrade(support_locations)
+            self.rebuild(game_state)
 
     # def build_reactive_defense(self, game_state):
     #     """
