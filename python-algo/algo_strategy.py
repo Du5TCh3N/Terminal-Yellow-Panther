@@ -60,6 +60,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         self.enemy_mobile_points = []
 
         self.last_attack = ["NONE"]
+        self.successful_attacks = {}
 
     def on_turn(self, turn_state):
         """
@@ -669,6 +670,12 @@ class AlgoStrategy(gamelib.AlgoCore):
                 gamelib.debug_write("Got scored on at: {}".format(location))
                 self.scored_on_locations.append(location)
                 gamelib.debug_write("All locations: {}".format(self.scored_on_locations))
+            if unit_owner_self:
+                gamelib.debug_write("Scored at: {}".format(location))
+                if self.last_attack[-1] in self.successful_attacks.keys():
+                    self.successful_attacks[self.last_attack[-1]] += 1
+                else:
+                    self.successful_attacks[self.last_attack[-1]] = 1
         spawns = events["spawn"]
         for spawn in spawns:
             location = tuple(spawn[0])
