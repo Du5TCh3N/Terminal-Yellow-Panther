@@ -56,6 +56,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         self.enemy_demolisher_spawn_locations = {}
         self.enemy_interceptor_spawn_locations = {}
         self.kamikaze_ready = False
+        self.attack_signal = 0
 
         self.enemy_mobile_points = []
 
@@ -127,9 +128,10 @@ class AlgoStrategy(gamelib.AlgoCore):
         #     self.attack_focus(game_state)
         # self.calculate_brute_force(game_state)
 
+        
+
         if self.attack_flag == 0:
             self.build_defences(game_state)
-            self.__remove_attack_walls(game_state)
 
         elif self.attack_flag == 2:
             self.build_defences(game_state)
@@ -137,10 +139,10 @@ class AlgoStrategy(gamelib.AlgoCore):
                 self.long_attack(game_state, self.attack_side)
             else:
                 self.short_attack(game_state, self.attack_side)
+            self.__remove_attack_walls(game_state)
             self.attack_flag = 0
-
-        if game_state.get_resource(MP, SELF) >= 13:
-            self.attack_flag = 1
+            self.attack_signal = 0
+        else:
             self.build_defences(game_state)
             rng = random.random()
             if rng >= 0.5:
@@ -151,6 +153,9 @@ class AlgoStrategy(gamelib.AlgoCore):
                 self.attack_strat = 1
             self.attack_flag = 2
 
+        if game_state.get_resource(MP, SELF) >= 13 and self.attack_signal == 0:
+            self.attack_flag = 1
+            self.attack_signal = 1
         
 
 
@@ -192,20 +197,23 @@ class AlgoStrategy(gamelib.AlgoCore):
             return {"left": 7, "right": 7}
         # Stores results for number of steps interceptor should take on both sides.
         idealSteps = {}
-        # Check if starting spawn point is in range of short attack
-        if self.__in_kamikaze_range(game_state, starting_location, LshortSuicide):
-            idealSteps["left"] = 1
-        if self.__in_kamikaze_range(game_state, starting_location, RshortSuicide):
-            idealSteps["right"] = 1
-        # If both are in then we can spawn immediately
-        if "left" in idealSteps and "right" in idealSteps:
-            return idealSteps
-
         path = game_state.find_path_to_edge(starting_location)
         
+
+        
+        
         for step, point in enumerate(path):
+            if step <= 4:
+                # Check if starting spawn point is in range of short attack
+                if self.__in_kamikaze_range(game_state, point, LshortSuicide):
+                    idealSteps["left"] = 1
+                if self.__in_kamikaze_range(game_state, point, RshortSuicide):
+                    idealSteps["right"] = 1
+                # If both are in then we can spawn immediately
+                if "left" in idealSteps and "right" in idealSteps:
+                    return idealSteps
             if "left" not in idealSteps and self.__in_kamikaze_range(game_state, point, lSuicide): 
-                idealSteps["left"] = step // 4 + 1
+                idealSteps["left"] = (step + 1) // 4 + 1
                                 
             if "right" not in idealSteps and self.__in_kamikaze_range(game_state,point, rSuicide):
                 idealSteps["right"] = (step + 1) // 4 + 1
@@ -298,8 +306,9 @@ class AlgoStrategy(gamelib.AlgoCore):
         else:
             attack_side = 0
             game_state.attempt_remove([[0, 13], [1, 13], [10, 4], [4, 9], [3, 11], [2, 12]])
-
+        game_state.attempt_spawn(WALL, [[22, 12],[5, 12]])
         return attack_side
+        
     def attack_prep_long(self, game_state):
         left_side_units, right_side_units = self.weaker_side(game_state, unit_type=None)
         if left_side_units > right_side_units:
@@ -392,6 +401,7 @@ class AlgoStrategy(gamelib.AlgoCore):
     """ KAMIKAZE STUFF """             
 
     def __fast_kamikaze_defence(self, game_state, left=True, right=True):
+        gamelib.debug_write("RUNNING FAST DEFENCE")
         # 2 SP
         leftWalls = [[2,12],[3,11]] if left else [[0,0]]
         rightWalls = [[25,12],[24,11]] if right else [[0,0]]
@@ -403,7 +413,6 @@ class AlgoStrategy(gamelib.AlgoCore):
         game_state.attempt_spawn(INTERCEPTOR, leftSpawn + rightSpawn)
 
     def __slow_kamikaze_defence(self, game_state, left=True, right=True, steps=9):
-
         leftWalls = [[4, 9], [10, 4]] if left else [[0,0]]
         rightWalls = [[23, 9], [17, 4]] if right else [[0,0]]
         game_state.attempt_spawn(WALL, leftWalls + rightWalls)
@@ -416,7 +425,7 @@ class AlgoStrategy(gamelib.AlgoCore):
             leftSpawn = [[8,5]] if left else [[0,0]]
             rightSpawn = [[19,5]] if left else [[0,0]]
             game_state.attempt_spawn(INTERCEPTOR, leftSpawn + rightSpawn)
-        elif steps >=5:
+        elif steps >= 5:
             leftSpawn = [[7,6]] if left else [[0,0]]
             rightSpawn = [[20,6]] if left else [[0,0]]
             game_state.attempt_spawn(INTERCEPTOR, leftSpawn + rightSpawn)
@@ -450,27 +459,37 @@ class AlgoStrategy(gamelib.AlgoCore):
         if game_state.get_resource(MP, SELF) >= mpThreshold and self.attack_flag != 2 and game_state.turn_number>=2:        
             scouts = self.most_spawn_location(SCOUT)
             demos = self.most_spawn_location(DEMOLISHER)
+
             scouts_lr = self.kamikaze_ideal_steps(game_state, scouts)
             demos_lr = self.kamikaze_ideal_steps(game_state, demos)
 
             # Need 2SP and 2MP
+            # FAST ATTACK LEFT
             if scouts_lr["left"] == 1 or demos_lr["left"] == 1:
                 self.__fast_kamikaze_defence(game_state, True, False)
+            # FAST DEFENCE RIGHT
             if scouts_lr["right"] == 1 or demos_lr["right"] == 1:
                 self.__fast_kamikaze_defence(game_state, False, True)
                         
+            
             if scouts_lr["left"] > 1 and demos_lr["left"] > 1:
+                gamelib.debug_write("RUNNING SLOW DEFENCE 1")
                 self.__slow_kamikaze_defence(game_state, True, False, demos_lr["left"])
-            elif scouts_lr["left"] > 1:
+            elif scouts_lr["left"] > 1 and demos_lr["left"] <= 1:
+                gamelib.debug_write("RUNNING SLOW DEFENCE 2")
                 self.__slow_kamikaze_defence(game_state, True, False, scouts_lr["left"])
-            elif demos_lr["left"] > 1:
+            elif demos_lr["left"] > 1 and scouts_lr["left"] <= 1:
+                gamelib.debug_write("RUNNING SLOW DEFENCE 3")
                 self.__slow_kamikaze_defence(game_state, True, False, demos_lr["left"])
                 
             if scouts_lr["right"] > 1 and demos_lr["right"] > 1:
+                gamelib.debug_write("RUNNING SLOW DEFENCE 4")
                 self.__slow_kamikaze_defence(game_state, False, True, demos_lr["right"])
-            elif scouts_lr["left"] > 1:
+            elif scouts_lr["left"] > 1 and demos_lr["right"] <= 1:
+                gamelib.debug_write("RUNNING SLOW DEFENCE 5")
                 self.__slow_kamikaze_defence(game_state, False, True, scouts_lr["right"])
-            elif demos_lr["left"] > 1:
+            elif demos_lr["left"] > 1 and scouts_lr["right"] <= 1:
+                gamelib.debug_write("RUNNING SLOW DEFENCE 6")
                 self.__slow_kamikaze_defence(game_state, False, True, demos_lr["right"])
 
 
