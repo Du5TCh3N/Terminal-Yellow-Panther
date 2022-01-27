@@ -1,3 +1,8 @@
+# Terminal 1 - Yellow Panther
+
+This repository contains the code that was used in competing in Terminal 1 Fall 2021 - Europe Regional. 
+This repository uses the C1GamesStarterKit. 
+
 # C1GamesStarterKit
 
 Welcome to the C1 Terminal Starter Kit! The repository contains a collection of scripts and 
